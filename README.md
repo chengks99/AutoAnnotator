@@ -16,9 +16,9 @@ $ python3 autoAttribute.py  [-h] [-train trainfile] [-test testfile] [-eval eavl
 
 - optional arguments</br>
   -h,       --help        show help message and exit</br>
-  -train trainfile, --trainfile training pickle file path name</br>
-  -test testfile, --testfile    testing pickle file path name</br>
-  -eval evalfile, --evalfile    eval pickle file path name</br>
+  -train trainfile, --trainfile training pickle file path name. OPTIONAL</br>
+  -test testfile, --testfile    testing pickle file path name. OPTIONAL</br>
+  -eval evalfile, --evalfile    eval pickle file path name. OPTIONAL</br>
 
 ## dataFilter 
 
