@@ -15,7 +15,7 @@ class AutoAttributeDetector (FeatureExtractor):
         self.filter = kwargs.pop('filter', {})
 
         self.data = {
-            'train': self._get_data(self.trainf, filter=self.filter).head(200),
+            'train': self._get_data(self.trainf, filter=self.filter),
             'test': self._get_data(self.testf, filter=self.filter),
             'eval': self._get_data(self.evalf, filter=self.filter)
         }
