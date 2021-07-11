@@ -1,4 +1,5 @@
-import os, math, pickle
+import os, math, pickle, uuid
+import pandas as pd
 from PIL import Image
 import numpy as np
 
@@ -176,8 +177,8 @@ class FeatureExtractor(object):
     #               will convert output 0 to no, 1 to small, 2 to high
     #   outf: output dataframe
     #   target_size: NN target input size
-    def img2arr (self, df, imgPathHeader='objImagePath', outHeader=[], outDict={}, objLabelHead='label', target_size=(224, 224)):
-        dic = {'data': [], 'obj': []}
+    def img2arr (self, df, imgPathHeader='objImagePath', outHeader=[], outDict={}, objLabelHead='label', indexHead='indexID', target_size=(224, 224)):
+        dic = {'data': [], 'obj': [], 'indexID': []}
         for lh in outHeader: dic[lh] = []
         for index, row in df.iterrows():
             img = load_img(row[imgPathHeader], target_size=target_size)
@@ -185,6 +186,7 @@ class FeatureExtractor(object):
             img = preprocess_input(img)
             dic['data'].append(img)
             dic['obj'].append(row[objLabelHead])
+            dic['indexID'].append(row.get(indexHead, str(uuid.uuid4())))
 
             for lh in outHeader:
                 lbl = row[lh]
@@ -200,16 +202,29 @@ class FeatureExtractor(object):
     
     # drop None data return dic with desired data & output
     def _get_data_dic (self, dic, outHeader):
-        dic = {'data': dic['data'], 'output': dic[outHeader], 'obj': dic['obj']}
-        
+        dic = {'data': dic['data'], 'output': dic[outHeader], 'obj': dic['obj'], 'indexID': dic['indexID']}
+
+        df = pd.DataFrame(dic).dropna(subset=['output'])
+        def _df2np (content):
+            return np.array(content.tolist())
+
+        return {
+            'data': _df2np(df.data),
+            'output': _df2np(df.output),
+            'obj': _df2np(df.obj),
+            'indexID': _df2np(df.indexID)
+        }
+        '''
         # drop none
-        x, y, o = [], [], []
-        for _x, _y, _o in zip(list(dic['data']), dic['output'], dic['obj']):
+        x, y, o, i = [], [], [], []
+        for _x, _y, _o, _i in zip(list(dic['data']), dic['output'], dic['obj'], dic['indexID']):
             if not _y is None:
                 x.append(_x)
                 y.append(_y)
                 o.append(_o)
-        return {'data': np.array(x), 'output': np.array(y), 'obj': np.array(o)}
+                i.append(_i)
+        return {'data': np.array(x), 'output': np.array(y), 'obj': np.array(o), 'indexID': np.array(i)}
+        '''
     
     # get output scaled
     def get_output_scaler (self, dic, outHeader, feature_range):

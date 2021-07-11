@@ -60,14 +60,14 @@ class AutoAttributeDetector (FeatureExtractor):
                     self.data[key] = pickle.load(handle)
     
     # convert data into dictionary type: {'train': {'data': [], 'occluded': [], 'label': [] ...}}
-    def get_data_output (self, outDict={}, objLabelHead='label', target_size=(224,224), outf={'train': 'trainData.pickle', 'test': 'testData.pickle', 'eval': 'evalData.pickle'}):
+    def get_data_output (self, outDict={}, objLabelHead='label', indexHead='indexID', target_size=(224,224), outf={'train': 'trainData.pickle', 'test': 'testData.pickle', 'eval': 'evalData.pickle'}):
         self.dict = {}
         outHeader = outDict.keys()
         for key, data in self.data.items():
             if data is None: continue
             print ('Get Data & Output for {} data'.format(key))
             if not os.path.isfile(outf[key]):
-                self.dict[key] = self.img2arr(data, outHeader=outHeader, outDict=outDict, objLabelHead=objLabelHead, target_size=target_size)
+                self.dict[key] = self.img2arr(data, outHeader=outHeader, outDict=outDict, objLabelHead=objLabelHead, indexHead=indexHead, target_size=target_size)
                 with open(outf[key], 'wb') as handle: pickle.dump(self.dict[key], handle)
             else:
                 with open(outf[key], 'rb') as handle:
@@ -139,10 +139,26 @@ if __name__ == '__main__':
         description='Automatic Attribute Classification Module'
     )
 
-    parser.add_argument('-train', '--trainfile', type=str, help='Specify training detafile (pickle format)', default=None)
-    parser.add_argument('-test', '--testfile', type=str, help='Specify testing datafile (pickle format)', default=None)
-    parser.add_argument('-eval', '--evalfile', type=str, help='Specify evaluation datafile (pickle format). This is to auto attribute classification the dataset in actual deployment', default=None)
+    parser.add_argument('-lm', '--labelMe', type=str, help='Specify directory that contains LabelMe format files', default=None)
+    parser.add_argument('-df', '--datafile', type=str, help='Specify input datafile', default=None)
+    parser.add_argument('-sp', '--split', action='store_true', help='Specify whether or not data need to split train/test', default=False)
+    parser.add_argument('-tr', '--trainfile', type=str, help='Specify training detafile (pickle format)', default=None)
+    parser.add_argument('-te', '--testfile', type=str, help='Specify testing datafile (pickle format)', default=None)
+    parser.add_argument('-ev', '--evalfile', type=str, help='Specify evaluation datafile (pickle format). This is to auto attribute classification the dataset in actual deployment', default=None)
     args = parser.parse_args(sys.argv[1:])
+
+    # extract LabelMe contains
+    if not args.labelMe is None:
+        from utils import LabelMeExtractor
+        lm = LabelMeExtractor(args.labelMe)
+        df = lm.extraction()
+        args.datafile = lm.save_file(df)
+    
+    # split data
+    if not args.datafile is None:
+        from utils import TrainTestSplitter
+        tts = TrainTestSplitter(args.datafile)
+        args.trainfile, args.testfile = tts.train_test_split()
 
     # input parameters
     dataFilter = {'label': ['Car', 'Pedestrian', 'Van']}
