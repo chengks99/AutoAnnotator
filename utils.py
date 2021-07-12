@@ -10,7 +10,7 @@ class LabelMeExtractor (object):
         self.outf = os.path.join(self.dir, '{}.pickle'.format(os.path.basename(self.dir)))
         print (self.outf)
     
-    def _extract_obj_data (self, jsonf, isKitti=False):
+    def _extract_obj_data (self, jsonf, isKitti=True):
         with open(jsonf, 'r') as f: data = json.load(f)
         if isKitti:
             objShape = data.pop('shape', None)
@@ -91,7 +91,7 @@ class TrainTestSplitter (object):
             _testRatio = _testSize / _totalSize
 
             if _trainRatio > maxTrain or _trainRatio < minTrain:
-                print ('{} ratio not met {} [{}-{}]'.format(0, _trainRatio, maxTrain, minTrain))
+                print ('{} ratio not met {:.2f} [{}-{}]'.format(o, _trainRatio, maxTrain, minTrain))
                 return False
 
             print ('{}: Train: {}({:.2f}%), Test: {}({:.2f}%)'.format(o, _trainSize, _trainRatio * 100., _testSize, _testRatio * 100.))
@@ -109,7 +109,7 @@ class TrainTestSplitter (object):
             pickle.dump(testdf, handle)
         return trainf, testf
 
-    def train_test_split (self, ratio={'max': 70, 'min': 30, 'step': 10}):
+    def train_test_split (self, ratio={'max': 70, 'min': 30, 'step': 5}):
         # get imgList and it unique object list
         imgList = self.df.imagePath.unique()
         lblList = []
@@ -131,6 +131,9 @@ class TrainTestSplitter (object):
             for train_index, test_index in ss.split(imgList, lblList):
                 X_train, X_test = imgList[train_index], imgList[test_index]
                 y_train, y_test = lblList[train_index], lblList[test_index]
+
+                if ignoreList.shape[0] > 0:
+                    X_train = np.concatenate((X_train, ignoreList), axis=0)
 
                 traindf = self.df[self.df.imagePath.isin(X_train)]
                 testdf = self.df[self.df.imagePath.isin(X_test)]
