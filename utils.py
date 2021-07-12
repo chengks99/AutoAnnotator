@@ -138,6 +138,7 @@ class TrainTestSplitter (object):
                 if res:
                     trainf, testf = self._save_output(traindf, testdf)
                     SPLIT = False
+                    break
         return trainf, testf
 
 
