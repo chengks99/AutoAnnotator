@@ -146,14 +146,14 @@ if __name__ == '__main__':
     parser.add_argument('-te', '--testfile', type=str, help='Specify testing datafile (pickle format)', default=None)
     parser.add_argument('-ev', '--evalfile', type=str, help='Specify evaluation datafile (pickle format). This is to auto attribute classification the dataset in actual deployment', default=None)
     args = parser.parse_args(sys.argv[1:])
-
+    
     # extract LabelMe contains
     if not args.labelMe is None:
         from utils import LabelMeExtractor
         lm = LabelMeExtractor(args.labelMe)
         df = lm.extraction()
         args.datafile = lm.save_file(df)
-    
+    exit(1)
     # split data
     if not args.datafile is None:
         from utils import TrainTestSplitter

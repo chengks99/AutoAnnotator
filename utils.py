@@ -7,11 +7,15 @@ class LabelMeExtractor (object):
         if not os.path.isdir(self.dir):
             raise ValueError('Unable to locate labelme directory: {}'.format(self.dir))
         self.outf = os.path.join(self.dir, '{}.pickle'.format(os.path.basename(self.dir)))
+        print (self.outf)
     
     def _extract_obj_data (self, jsonf):
         with open(jsonf, 'r') as f: data = json.load(f)
         objShape = data.pop('shapes', None)
         if objShape is None: return None
+        if 'flags' in data:
+            fDict = data.pop('flags')
+            data.update(fDict)
         objList = []
         for obj in objShape:
             oDict = copy.deepcopy(data)
@@ -32,6 +36,7 @@ class LabelMeExtractor (object):
                 if not jList is None:
                     objList.extend(jList)
         df = pd.DataFrame(objList)
+        print(df)
         return df
     
     def save_file (self, df):
