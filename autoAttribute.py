@@ -24,7 +24,7 @@ class AutoAttributeDetector (FeatureExtractor):
         self.data = {'eval': self._get_data(self.evalf, filter=self.filter)}
 
     # read data from pickle file
-    def _get_data (self, dataf, filter={}):
+    def _get_data (self, dataf):
         if dataf is None: return None
         dataf = os.path.abspath(dataf)
         fname, fext = os.path.splitext(dataf)
@@ -153,12 +153,14 @@ if __name__ == '__main__':
         lm = LabelMeExtractor(args.labelMe)
         df = lm.extraction()
         args.datafile = lm.save_file(df)
-    exit(1)
+
     # split data
     if not args.datafile is None:
         from utils import TrainTestSplitter
         tts = TrainTestSplitter(args.datafile)
         args.trainfile, args.testfile = tts.train_test_split()
+    print (args)
+    exit(1)
 
     # input parameters
     dataFilter = {'label': ['Car', 'Pedestrian', 'Van']}
