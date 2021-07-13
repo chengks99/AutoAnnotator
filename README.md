@@ -39,3 +39,4 @@ Dictionary to store configuration for each attribute. Attribute name should be k
 |**epochs**|Maximum epochs in model training. Default: 200|
 |**batch_size**|Batch size use in ML. Default: 32|
 |**input_tensor**|Data input shape. Default: (224, 224, 3)|
+|**data_filter**|Dictionary of data to be select. Format should be {'column_header': [list_of_value]}. For example {'label': ['Car', 'Van']} will select only data with label _car_ and _van_. Default: {}|
