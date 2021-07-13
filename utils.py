@@ -2,17 +2,20 @@ import os, json, copy, pickle, uuid
 import numpy as np
 import pandas as pd
 
+# Extract LabelMe format json into dataframe
 class LabelMeExtractor (object):
-    def __init__(self, lmDir):
+    def __init__(self, lmDir, isKitti=False):
         self.dir = lmDir
         if not os.path.isdir(self.dir):
             raise ValueError('Unable to locate labelme directory: {}'.format(self.dir))
         self.outf = os.path.join(self.dir, '{}.pickle'.format(os.path.basename(self.dir)))
+        self.isKitti = isKitti
         print (self.outf)
     
-    def _extract_obj_data (self, jsonf, isKitti=True):
+    # extract data for each objects
+    def _extract_obj_data (self, jsonf):
         with open(jsonf, 'r') as f: data = json.load(f)
-        if isKitti:
+        if self.isKitti:
             objShape = data.pop('shape', None)
         else:
             objShape = data.pop('shapes', None)
@@ -24,7 +27,7 @@ class LabelMeExtractor (object):
         objList = []
         for obj in objShape:
             oDict = copy.deepcopy(data)
-            if 'flags' in obj and not isKitti:
+            if 'flags' in obj and not self.isKitti:
                 flags = obj.pop('flags')
                 oDict.update(flags)
             oDict.update(obj)
@@ -32,6 +35,7 @@ class LabelMeExtractor (object):
             objList.append(oDict)
         return objList
 
+    # start extraction for each files
     def extraction (self):
         objList = []
         for root, dirs, files in os.walk(self.dir):
@@ -43,11 +47,13 @@ class LabelMeExtractor (object):
         df = pd.DataFrame(objList)
         return df
     
+    # save dataframe
     def save_file (self, df):
         with open(self.outf, 'wb') as handle:
             pickle.dump(df, handle)
         return self.outf
 
+# train and test set splitting
 class TrainTestSplitter (object):
     def __init__(self, dfPath):
         if not os.path.isfile(dfPath):
@@ -55,6 +61,7 @@ class TrainTestSplitter (object):
         with open(dfPath, 'rb') as handle:
             self.df = pickle.load(handle)
     
+    # some unique objectList contain only 1 sample. This will cause train/test splitting return error. we need to filter out those sample and add into train set after that
     def _single_data_checker (self, imgList, lblList):
         from collections import Counter
         _counter = Counter(lblList)
@@ -75,6 +82,7 @@ class TrainTestSplitter (object):
         lblList = np.array(_lblList)
         return imgList, lblList, np.array(ignoreList)
 
+    # checking ratio between train/test return True if met ratio setting, False otherwise
     def data_checker (self, traindf, testdf, objType, ratio):
         print ('***********************')
         maxTrain = float(ratio['max'] + ratio['step']) / 100.
@@ -97,6 +105,7 @@ class TrainTestSplitter (object):
             print ('{}: Train: {}({:.2f}%), Test: {}({:.2f}%)'.format(o, _trainSize, _trainRatio * 100., _testSize, _testRatio * 100.))
         return True
     
+    # save train/test dataset
     def _save_output (self, traindf, testdf):
         from datetime import datetime
         now = datetime.now()
@@ -109,6 +118,7 @@ class TrainTestSplitter (object):
             pickle.dump(testdf, handle)
         return trainf, testf
 
+    # split train test dataset
     def train_test_split (self, ratio={'max': 70, 'min': 30, 'step': 5}):
         # get imgList and it unique object list
         imgList = self.df.imagePath.unique()
@@ -127,6 +137,8 @@ class TrainTestSplitter (object):
         ss = StratifiedShuffleSplit(n_splits=5, test_size=float(ratio['min'])/100., random_state=16)
         SPLIT = True
         trainf, testf = None, None
+
+        # continue looping if data splitting not met ratio requirement
         while (SPLIT):
             for train_index, test_index in ss.split(imgList, lblList):
                 X_train, X_test = imgList[train_index], imgList[test_index]

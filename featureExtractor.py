@@ -91,7 +91,7 @@ class FeatureExtractor(object):
         #imgPath = self._fix_for_diff_server(imgPath)
         imgPrefix = '{}_{}'.format(row['label'], row['group_id'])
         fname, fext = os.path.splitext(imgPath)
-        cName = imgPath.replace(fext, '_{}{}'.format(imgPrefix, fext))
+        return imgPath.replace(fext, '_{}{}'.format(imgPrefix, fext))
 
     # get image name and input image with original background
     def _crop_padding_obj (self, img, row, rate, save_img):
@@ -178,89 +178,75 @@ class FeatureExtractor(object):
     #   outf: output dataframe
     #   target_size: NN target input size
     def img2arr (self, df, imgPathHeader='objImagePath', outHeader=[], outDict={}, objLabelHead='label', indexHead='indexID', target_size=(224, 224)):
-        dic = {'data': [], 'obj': [], 'indexID': []}
-        for lh in outHeader: dic[lh] = []
+        dataList = []
         for index, row in df.iterrows():
+            dic = {}
             img = load_img(row[imgPathHeader], target_size=target_size)
             img = img_to_array(img)
             img = preprocess_input(img)
-            dic['data'].append(img)
-            dic['obj'].append(row[objLabelHead])
-            dic['indexID'].append(row.get(indexHead, str(uuid.uuid4())))
+
+            dic['data'] = np.array(img, dtype='float32')
+            dic['obj'] = row[objLabelHead]
+            dic['indexID'] = row.get(indexHead, str(uuid.uuid4()))
 
             for lh in outHeader:
                 lbl = row[lh]
-                if not lh in dic: dic[lh] = []
                 if lh in outDict.keys():
                     if 'ranging' in outDict[lh]:
                         lbl = self._get_ranging_output(outDict[lh]['ranging'], lbl)
-                    else:
+                    if 'matching' in outDict[lh]:
                         lbl = outDict[lh]['matching'].get(str(lbl), None)
-                dic[lh].append(lbl)
-        dic['data'] = np.array(dic['data'], dtype='float32')
-        return dic
+                dic[lh] = lbl
+            dataList.append(dic)
+        return pd.DataFrame(dataList)
     
-    # drop None data return dic with desired data & output
-    def _get_data_dic (self, dic, outHeader):
-        dic = {'data': dic['data'], 'output': dic[outHeader], 'obj': dic['obj'], 'indexID': dic['indexID']}
-
-        df = pd.DataFrame(dic).dropna(subset=['output'])
-        def _df2np (content):
-            return np.array(content.tolist())
-
-        return {
-            'data': _df2np(df.data),
-            'output': _df2np(df.output),
-            'obj': _df2np(df.obj),
-            'indexID': _df2np(df.indexID)
-        }
-        '''
-        # drop none
-        x, y, o, i = [], [], [], []
-        for _x, _y, _o, _i in zip(list(dic['data']), dic['output'], dic['obj'], dic['indexID']):
-            if not _y is None:
-                x.append(_x)
-                y.append(_y)
-                o.append(_o)
-                i.append(_i)
-        return {'data': np.array(x), 'output': np.array(y), 'obj': np.array(o), 'indexID': np.array(i)}
-        '''
-    
+    # drop None data return df with desired data & output
+    def _get_data_dic (self, df, outHeader, objLabelHead, indexHead):
+        _df = df[["data", outHeader, objLabelHead, indexHead]]
+        return _df.dropna(subset=[outHeader])
+   
     # get output scaled
-    def get_output_scaler (self, dic, outHeader, feature_range):
-        dic = self._get_data_dic(dic, outHeader)
-        if feature_range is None: return dic
+    def get_output_scaler (self, df, outHeader, feature_range, objLabelHead, indexHead):
+        _df = self._get_data_dic(df, outHeader, objLabelHead, indexHead)
+        if feature_range is None: return _df
 
-        dic['output'] = dic['output'].reshape(-1,1)
+        outCat = df[outHeader].to_numpy().reshape(-1,1)
         scaf = '{}-scaler.pickle'.format(outHeader)
         if not os.path.isfile(scaf):
             scaler = MinMaxScaler(feature_range=feature_range)
-            scaler.fit(dic['output'])
+            scaler.fit(outCat)
             with open(scaf, 'wb') as handle: pickle.dump(scaler, handle)
         else:
             with open(scaf, 'rb') as handle: scaler = pickle.load(handle)
-        dic['output'] = scaler.transform(dic['output'])
-        return dic
+        _df[outHeader] = scaler.transform(outCat)
+        return _df
 
     # get output encoded
-    def get_output_encoder (self, dic, outHeader):
-        dic = self._get_data_dic(dic, outHeader)
+    def get_output_encoder (self, df, outHeader, objLabelHead, indexHead):
+        _df = self._get_data_dic(df, outHeader, objLabelHead, indexHead)
 
         encf = '{}-encoder.pickle'.format(outHeader)
-        uniqueOutput = np.unique(dic['output'])
+        uniqueOutput = _df[outHeader].unique()
         if not os.path.isfile(encf):
             lb = LabelEncoder()
-            lb.fit(dic['output'])
+            lb.fit(_df[outHeader].to_numpy())
             with open(encf, 'wb') as handle: pickle.dump(lb, handle)
         else:
             with open(encf, 'rb') as handle: lb = pickle.load(handle)
-        dic['output'] = lb.transform(dic['output'])
-        dic['output'] = to_categorical(dic['output'], dtype='float32')
-
+        
+        outCat = lb.transform(_df[outHeader].to_numpy())
+        outCat = to_categorical(outCat, dtype='float32')
+        counter = 0
+        for index, row in _df.iterrows():
+            _df.loc[index, outHeader] = outCat[counter]
+            counter += 1
+        #_df[outHeader] = outCat.tolist()
+        
+        outCat = []
         for l in uniqueOutput:
             e = lb.transform(np.array([l]))
             print ('{} LabelEncoder {} transform to {}'.format(outHeader, l, e[0]))
-        return dic
+        return _df
     
     # print output encoder
     def print_output_encoder (self, dic, outHeader):
