@@ -190,11 +190,28 @@ if __name__ == '__main__':
 
     # input parameters
     outDict = {
+        'type' : {
+            'matching': {'sedan': 'sedan', 'van': 'van', 'bus': 'bus', 'SUV': 'suv', 'lorry': 'lorry'},
+            'augmentation': True,
+            'data_filter': {'label': ['vehicle']},
+        },
+        'occlusion': {
+            'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
+            'augmentation': False,
+            'data_filter': {'label': ['vehicle']}
+        },
+        'view': {
+            'matching': {'back': 'back', 'front': 'front', 'side-45-degree': 'side45', 'side': 'side'},
+            'augmentation': False,
+            'data_filter': {'label': ['cyclist', 'biker']}
+        }
+    }
+    '''
+    outDict = {
         'occluded': {
             'matching': {'0.0': 'no', '1.0': 'small', '2.0': 'high'},
             'augmentation': True,
-            'data_filter': {'label': ['Car', 'Pedestrian', 'Van']},
-            'epochs': 1
+            'data_filter': {'label': ['Car', 'Pedestrian', 'Van']}
         }, 
         'rotation_y': {
             'ranging': {'default': 'side', 'back': [[-1.67, -1.33], [0.33, 0.67]], 'front': [[1.33, 1.67], [-0.67, -0.33]]},
@@ -210,6 +227,7 @@ if __name__ == '__main__':
             'method': 'regression'
         }
     }
+    '''
     
     # attribute detector sample usage
     DEVELOPMENT = True
@@ -226,7 +244,7 @@ if __name__ == '__main__':
     for key, value in outDict.items():
         method = value.get('method', 'classification')
         # for debugging purpose
-        if key != 'occluded': continue
+        if key != 'occlusion': continue
 
         if method == 'classification':
             attrDet.attr_cls(value, outHeader=key)

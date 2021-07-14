@@ -160,14 +160,18 @@ class FeatureExtractor(object):
             imgPath = ip
             #imgPath = self._fix_for_diff_server(ip)
             
-            img = Image.open(imgPath)
+            if not os.path.isfile(imgPath):
+                print ('Unable to locate image file {}'.format(imgPath))
+                continue
+            
+            img = Image.open(imgPath) 
             for index, row in _df.iterrows():
                 if grey_scale == 'original':
                     objImgPath = self._crop_padding_obj(img, row, pad_rate, save_img)
                 else:
                     objImgPath = self._crop_greyscale_obj(img, row, pad_rate, grey_scale, save_img)
                 df.loc[index,'objImagePath'] = objImgPath
-        return df
+        return df.dropna(subset=['objImagePath'])
     
     # get img array and output
     #   imgPathHeader: imgPathname
@@ -186,7 +190,7 @@ class FeatureExtractor(object):
             img = preprocess_input(img)
 
             dic['data'] = np.array(img, dtype='float32')
-            dic['obj'] = row[objLabelHead]
+            dic[objLabelHead] = row[objLabelHead]
             dic['indexID'] = row.get(indexHead, str(uuid.uuid4()))
 
             for lh in outHeader:
