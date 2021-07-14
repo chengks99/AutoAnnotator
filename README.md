@@ -11,18 +11,23 @@ This project working to provide auto attribute detection for detected object in 
 
 ### Command
 ```sh
-$ python3 autoAttribute.py  [-h] [-train trainfile] [-test testfile] [-eval eavlfile]
-```
+$ python autoAttribute.py [-h] [-lm LABELME] [-df DATAFILE] [-sp] [-tr TRAINFILE] [-te TESTFILE] [-ev EVALFILE]
 
-- optional arguments</br>
-  -h,       --help        show help message and exit</br>
-  -train trainfile, --trainfile training pickle file path name. OPTIONAL</br>
-  -test testfile, --testfile    testing pickle file path name. OPTIONAL</br>
-  -eval evalfile, --evalfile    eval pickle file path name. OPTIONAL</br>
+Automatic Attribute Classification Module
 
-## dataFilter 
-
-Dictionary to filter initial data with certain parameters. </br>For example **{'label': ['Car', 'Van']}** whill only process data with label is either car or van. User can insert multiple key into dictionary for filtering.
+optional arguments:
+  -h, --help            show this help message and exit
+  -lm LABELME, --labelMe LABELME
+                        Specify directory that contains LabelMe format files
+  -df DATAFILE, --datafile DATAFILE
+                        Specify input datafile
+  -sp, --split          Specify whether or not data need to split train/test
+  -tr TRAINFILE, --trainfile TRAINFILE
+                        Specify training detafile (pickle format)
+  -te TESTFILE, --testfile TESTFILE
+                        Specify testing datafile (pickle format)
+  -ev EVALFILE, --evalfile EVALFILE
+                        Specify evaluation datafile (pickle format). This is to auto attribute classification the dataset in actual deployment
 
 ## outDict
 
