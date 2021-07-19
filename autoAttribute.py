@@ -83,19 +83,19 @@ class AutoAttributeDetector (FeatureExtractor):
         return df
 
    # form dataframe for classification
-    def _form_encoding_input_data (self, outHeader, filter, prefix):
+    def _form_encoding_input_data (self, outHeader, filter, second_class, prefix):
         _data = {}
         for k in self.fvData.keys():
             _data[k] = self._data_filter(self.fvData[k], filter)
-            _data[k] = self.get_output_encoder(_data[k], outHeader, prefix, self.objLabelHead, self.indexHead)
+            _data[k] = self.get_output_encoder(_data[k], outHeader, second_class, prefix, self.objLabelHead, self.indexHead)
         return _data
     
     # form dataframe for regre
-    def _form_regressor_input_data (self, outHeader, feature_range, prefix):
+    def _form_regressor_input_data (self, outHeader, feature_range, second_class, prefix):
         _data = {}
         for k in self.fvData.keys():
             _data[k] = self._data_filter(self.fvData[k], filter)
-            _data[k] = self.get_output_scaler(data[k], outHeader, feature_range, prefix, self.objLabelHead, self.indexHead)
+            _data[k] = self.get_output_scaler(data[k], outHeader, feature_range, second_class, prefix, self.objLabelHead, self.indexHead)
         return _data
     
     # print output decoder
@@ -122,7 +122,7 @@ class AutoAttributeDetector (FeatureExtractor):
         cfg = self._get_cfg(outHeader, **params)
         print ('Perform {} attribute classification'.format(outHeader))
 
-        clsData = self._form_encoding_input_data(outHeader, cfg['data_filter'], cfg['prefix'])
+        clsData = self._form_encoding_input_data(outHeader, cfg['data_filter'], cfg['second_class'], cfg['prefix'])
         modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
         classifier = None
         if cfg['nn'] == 'mobileNet':
@@ -146,7 +146,7 @@ class AutoAttributeDetector (FeatureExtractor):
         print ('Perform {} Attribute Regression'.format(outHeader))
         print (cfg)
 
-        alphaData = self._form_regressor_input_data(outHeader, feature_range=cfg['feature_range'], prefix=cfg['prefix'])
+        alphaData = self._form_regressor_input_data(outHeader, feature_range=cfg['feature_range'], second_class=cfg['second_class'], prefix=cfg['prefix'])
         modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
         regressor = None
         if cfg['nn'] == 'mobileNet':

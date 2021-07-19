@@ -205,13 +205,17 @@ class FeatureExtractor(object):
         return pd.DataFrame(dataList)
     
     # drop None data return df with desired data & output
-    def _get_data_dic (self, df, outHeader, objLabelHead, indexHead):
-        _df = df[["data", outHeader, objLabelHead, indexHead]]
+    def _get_data_dic (self, df, outHeader, second_class, objLabelHead, indexHead):
+        _fList = ['data', outHeader, objLabelHead, indexHead]
+        if not second_class is None:
+            if second_class != outHeader:
+                _fList.append(second_class)
+        _df = df[_fList]
         return _df.dropna(subset=[outHeader])
    
     # get output scaled
-    def get_output_scaler (self, df, outHeader, feature_range, prefix, objLabelHead, indexHead):
-        _df = self._get_data_dic(df, outHeader, objLabelHead, indexHead)
+    def get_output_scaler (self, df, outHeader, feature_range, second_class, prefix, objLabelHead, indexHead):
+        _df = self._get_data_dic(df, outHeader, second_class, objLabelHead, indexHead)
         if feature_range is None: return _df
 
         outCat = df[outHeader].to_numpy().reshape(-1,1)
@@ -226,8 +230,8 @@ class FeatureExtractor(object):
         return _df
 
     # get output encoded
-    def get_output_encoder (self, df, outHeader, prefix, objLabelHead, indexHead):
-        _df = self._get_data_dic(df, outHeader, objLabelHead, indexHead)
+    def get_output_encoder (self, df, outHeader, second_class, prefix, objLabelHead, indexHead):
+        _df = self._get_data_dic(df, outHeader, second_class, objLabelHead, indexHead)
 
         encf = '{}-encoder.pickle'.format(prefix)
         uniqueOutput = _df[outHeader].unique()
