@@ -83,19 +83,19 @@ class AutoAttributeDetector (FeatureExtractor):
         return df
 
    # form dataframe for classification
-    def _form_encoding_input_data (self, outHeader, filter):
+    def _form_encoding_input_data (self, outHeader, filter, prefix):
         _data = {}
         for k in self.fvData.keys():
             _data[k] = self._data_filter(self.fvData[k], filter)
-            _data[k] = self.get_output_encoder(_data[k], outHeader, self.objLabelHead, self.indexHead)
+            _data[k] = self.get_output_encoder(_data[k], outHeader, prefix, self.objLabelHead, self.indexHead)
         return _data
     
     # form dataframe for regre
-    def _form_regressor_input_data (self, outHeader, feature_range):
+    def _form_regressor_input_data (self, outHeader, feature_range, prefix):
         _data = {}
         for k in self.fvData.keys():
             _data[k] = self._data_filter(self.fvData[k], filter)
-            _data[k] = self.get_output_scaler(data[k], outHeader, feature_range, self.objLabelHead, self.indexHead)
+            _data[k] = self.get_output_scaler(data[k], outHeader, feature_range, prefix, self.objLabelHead, self.indexHead)
         return _data
     
     # print output decoder
@@ -104,7 +104,7 @@ class AutoAttributeDetector (FeatureExtractor):
             self.print_output_encoder(self.fvData[k], key)
 
     # get default configuration dictionary
-    def _get_cfg (self, **kwargs):
+    def _get_cfg (self, outHeader, **kwargs):
         cfg = {}
         cfg['augmentation'] = kwargs.pop('augmentation', False)
         cfg['nn'] = kwargs.pop('nn', 'mobileNet')
@@ -113,16 +113,17 @@ class AutoAttributeDetector (FeatureExtractor):
         cfg['input_tensor'] = kwargs.pop('input_tensor', (224,224,3))
         cfg['feature_range'] = kwargs.pop('feature_range', None)
         cfg['data_filter'] = kwargs.pop('data_filter', [])
+        cfg['prefix'] = kwargs.pop('prefix', outHeader)
+        cfg['second_class'] = kwargs.pop('second_class', None)
         return cfg        
 
     # classification
     def attr_cls (self, params, outHeader, objLabelHead='label'):
-        cfg = self._get_cfg(**params)
+        cfg = self._get_cfg(outHeader, **params)
         print ('Perform {} attribute classification'.format(outHeader))
-        print (cfg)
 
-        clsData = self._form_encoding_input_data(outHeader, cfg['data_filter'])
-        modelf='{}-{}.h5'.format(outHeader, cfg['nn'])
+        clsData = self._form_encoding_input_data(outHeader, cfg['data_filter'], cfg['prefix'])
+        modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
         classifier = None
         if cfg['nn'] == 'mobileNet':
             from modelling import MobileNetClassifier
@@ -136,7 +137,7 @@ class AutoAttributeDetector (FeatureExtractor):
         if 'train' in clsData.keys() and 'test' in clsData.keys():
             classifier.build_model(augmentation=cfg['augmentation'])
             classifier.train_model(modelf=modelf, epochs=cfg['epochs'], batch_size=cfg['batch_size'])
-        classifier.predict_data(modelf=modelf)
+        pred = classifier.predict_data(modelf=modelf, eClass=cfg['second_class'])
         self._print_decoded_output(outHeader)
         
     # regression
@@ -145,8 +146,8 @@ class AutoAttributeDetector (FeatureExtractor):
         print ('Perform {} Attribute Regression'.format(outHeader))
         print (cfg)
 
-        alphaData = self._form_regressor_input_data(outHeader, feature_range=cfg['feature_range'])
-        modelf='{}-{}.h5'.format(outHeader, cfg['nn'])
+        alphaData = self._form_regressor_input_data(outHeader, feature_range=cfg['feature_range'], prefix=cfg['prefix'])
+        modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
         regressor = None
         if cfg['nn'] == 'mobileNet':
             from modelling import MobileNetRegressor
@@ -160,7 +161,7 @@ class AutoAttributeDetector (FeatureExtractor):
         if 'train' in alphaData.keys() and 'test' in alphaData.keys():
             regressor.build_model(augmentation=cfg['augmentation'])
             regressor.train_model(modelf=modelf, epochs=cfg['epochs'], batch_size=cfg['batch_size'])
-        regressor.predict_data(modelf=modelf)
+        pred = regressor.predict_data(modelf=modelf, eClass=cfg['second_class'])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -170,6 +171,7 @@ if __name__ == '__main__':
     parser.add_argument('-lm', '--labelMe', type=str, help='Specify directory that contains LabelMe format files', default=None)
     parser.add_argument('-df', '--datafile', type=str, help='Specify input datafile', default=None)
     parser.add_argument('-sp', '--split', action='store_true', help='Specify whether or not data need to split train/test', default=False)
+    parser.add_argument('-kt', '--kitti', action='store_true', help='Specify whether or not dataset is kitti dataset', default=False)
     parser.add_argument('-tr', '--trainfile', type=str, help='Specify training detafile (pickle format)', default=None)
     parser.add_argument('-te', '--testfile', type=str, help='Specify testing datafile (pickle format)', default=None)
     parser.add_argument('-ev', '--evalfile', type=str, help='Specify evaluation datafile (pickle format). This is to auto attribute classification the dataset in actual deployment', default=None)
@@ -178,7 +180,7 @@ if __name__ == '__main__':
     # extract LabelMe contains
     if not args.labelMe is None:
         from utils import LabelMeExtractor
-        lm = LabelMeExtractor(args.labelMe, isKitti=False)
+        lm = LabelMeExtractor(args.labelMe, isKitti=args.kitti)
         df = lm.extraction()
         args.datafile = lm.save_file(df)
 
@@ -189,45 +191,52 @@ if __name__ == '__main__':
         args.trainfile, args.testfile = tts.train_test_split()
 
     # input parameters
-    outDict = {
-        'type' : {
-            'matching': {'sedan': 'sedan', 'van': 'van', 'bus': 'bus', 'SUV': 'suv', 'lorry': 'lorry'},
-            'augmentation': True,
-            'data_filter': {'label': ['vehicle']},
-        },
-        'occlusion': {
-            'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
-            'augmentation': False,
-            'data_filter': {'label': ['vehicle']}
-        },
-        'view': {
-            'matching': {'back': 'back', 'front': 'front', 'side-45-degree': 'side45', 'side': 'side'},
-            'augmentation': False,
-            'data_filter': {'label': ['cyclist', 'biker']}
+    if args.kitti:
+        outDict = {
+            'occluded': {
+                'matching': {'0.0': 'no', '1.0': 'small', '2.0': 'high'},
+                'augmentation': True,
+                'data_filter': {'label': ['Car', 'Pedestrian', 'Van']}
+            }, 
+            'rotation_y': {
+                'ranging': {'default': 'side', 'back': [[-1.67, -1.33], [0.33, 0.67]], 'front': [[1.33, 1.67], [-0.67, -0.33]]},
+            },
+            'label': {
+                'augmentation': True,
+            },
+            'alpha': {
+                'method': 'regression',
+                'feature_range': (0,1)
+            },
+            'truncated': {
+                'method': 'regression'
+            }
         }
-    }
-    '''
-    outDict = {
-        'occluded': {
-            'matching': {'0.0': 'no', '1.0': 'small', '2.0': 'high'},
-            'augmentation': True,
-            'data_filter': {'label': ['Car', 'Pedestrian', 'Van']}
-        }, 
-        'rotation_y': {
-            'ranging': {'default': 'side', 'back': [[-1.67, -1.33], [0.33, 0.67]], 'front': [[1.33, 1.67], [-0.67, -0.33]]},
-        },
-        'label': {
-            'augmentation': True,
-        },
-        'alpha': {
-            'method': 'regression',
-            'feature_range': (0,1)
-        },
-        'truncated': {
-            'method': 'regression'
-        }
-    }
-    '''
+    else:
+        outDict = {
+                'type' : {
+                    'matching': {'sedan': 'sedan', 'van': 'van', 'bus': 'bus', 'SUV': 'suv', 'lorry': 'lorry'},
+                    'augmentation': True,
+                    'data_filter': {'label': ['vehicle']},
+                    #'prefix': 'type_vehicle',
+                    'ignore': True
+                },
+                'occlusion': {
+                    'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
+                    'augmentation': False,
+                    'data_filter': {'label': ['vehicle']},
+                    #'prefix': 'occlusion_vehicle',
+                    'second_class': 'type',
+                    'ignore': False
+                },
+                'view': {
+                    'matching': {'back': 'back', 'front': 'front', 'side-45-degree': 'side45', 'side': 'side'},
+                    'augmentation': False,
+                    'data_filter': {'label': ['cyclist', 'biker']},
+                    #'prefix': 'view_cyclist_biker',
+                    'ignore': True
+                }
+            }
     
     # attribute detector sample usage
     DEVELOPMENT = True
@@ -244,7 +253,9 @@ if __name__ == '__main__':
     for key, value in outDict.items():
         method = value.get('method', 'classification')
         # for debugging purpose
-        if key != 'occlusion': continue
+        if value.get('ignore', False):
+            print ('Ignore {} {} as per configuration'.format(key, method))
+            continue
 
         if method == 'classification':
             attrDet.attr_cls(value, outHeader=key)

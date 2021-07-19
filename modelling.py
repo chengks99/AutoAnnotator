@@ -12,7 +12,8 @@ from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler,Ea
 
 from sklearn.model_selection import train_test_split
 from sklearn.utils import class_weight
-from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
+
+from evaluator import Evaluation
 
 # ML model base
 class ModellingBase (object):
@@ -75,6 +76,7 @@ class ModellingBase (object):
         lrate = LearningRateScheduler(step_decay)
         return [cp, el, lrate]
     
+    '''
     # classification confusion matrix printout 
     def cls_res_output (self, act, pred):            
         conf_matrix = confusion_matrix(act.argmax(axis=1), pred.argmax(axis=1))
@@ -118,9 +120,10 @@ class ModellingBase (object):
         std = np.std(resList)
 
         print ('Regression Result: Mean: {:.2f}%, Std: {:.2f}%'.format(mean, std))
+        '''
 
 # MobileNet Classifier
-class MobileNetClassifier (ModellingBase):
+class MobileNetClassifier (ModellingBase, Evaluation):
     def __init__(self, data, outHeader, objLabelHead, input_tensor):
         self.data = data
         self.outHeader = outHeader
@@ -130,6 +133,7 @@ class MobileNetClassifier (ModellingBase):
         self.model = None
 
         ModellingBase.__init__(self)
+        Evaluation.__init__(self)
 
     # classification layer
     def _get_output_layer (self, baseOut):
@@ -186,7 +190,7 @@ class MobileNetClassifier (ModellingBase):
             self.model = load_model(modelf)
 
     # perform prediction
-    def predict_data (self, modelf='cls-mobileNet.h5', data=None):
+    def predict_data (self, modelf='cls-mobileNet.h5', data=None, eClass=None):
         data = self.data['test'] if data is None else data
         testData, testOutput = self.df_to_input(data)
         if data is None:
@@ -196,12 +200,15 @@ class MobileNetClassifier (ModellingBase):
         
         score, acc = self.model.evaluate(testData, testOutput, batch_size=32)
         print ('TestScore: {:.2f}, Accuracy: {:.2f}'.format(score, acc))
-        preds = self.model.predict(testData)
-        self.cls_res_output(testOutput, preds)
-        self.cls_res_output_by_class(data, testOutput, preds)
+        pred = self.model.predict(testData)
+
+        self.classification_result(data, testOutput, pred, eClass)
+
+        #self.cls_res_output(testOutput, pred)
+        #self.cls_res_output_by_class(data, testOutput, pred)
     
 # MobileNet regressor
-class MobileNetRegressor (ModellingBase):
+class MobileNetRegressor (ModellingBase, Evaluation):
     def __init__(self, data, outHeader, input_tensor):
         self.data = data
         self.outHeader = outHeader
@@ -210,6 +217,7 @@ class MobileNetRegressor (ModellingBase):
         self.model = None
 
         ModellingBase.__init__(self)
+        Evaluation.__init__(self)
     
     # regressor layer
     def _get_output_layer (self, baseOut):
@@ -266,7 +274,7 @@ class MobileNetRegressor (ModellingBase):
             self.model = load_model(modelf)
     
     # prediction
-    def predict_data (self, modelf, data=None):
+    def predict_data (self, modelf, data=None, eClass=None):
         data = self.data['test'] if data is None else data
         testData, testOutput = self.df_to_input(data)
         if data is None:
@@ -275,4 +283,4 @@ class MobileNetRegressor (ModellingBase):
             self.model = load_model(modelf)
         
         pred = self.model.predict(testData)
-        self.reg_res_output(testOutput, pred)
+        self.regression_result(testOutput, pred, eClass)

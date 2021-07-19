@@ -210,12 +210,12 @@ class FeatureExtractor(object):
         return _df.dropna(subset=[outHeader])
    
     # get output scaled
-    def get_output_scaler (self, df, outHeader, feature_range, objLabelHead, indexHead):
+    def get_output_scaler (self, df, outHeader, feature_range, prefix, objLabelHead, indexHead):
         _df = self._get_data_dic(df, outHeader, objLabelHead, indexHead)
         if feature_range is None: return _df
 
         outCat = df[outHeader].to_numpy().reshape(-1,1)
-        scaf = '{}-scaler.pickle'.format(outHeader)
+        scaf = '{}-scaler.pickle'.format(prefix)
         if not os.path.isfile(scaf):
             scaler = MinMaxScaler(feature_range=feature_range)
             scaler.fit(outCat)
@@ -226,10 +226,10 @@ class FeatureExtractor(object):
         return _df
 
     # get output encoded
-    def get_output_encoder (self, df, outHeader, objLabelHead, indexHead):
+    def get_output_encoder (self, df, outHeader, prefix, objLabelHead, indexHead):
         _df = self._get_data_dic(df, outHeader, objLabelHead, indexHead)
 
-        encf = '{}-encoder.pickle'.format(outHeader)
+        encf = '{}-encoder.pickle'.format(prefix)
         uniqueOutput = _df[outHeader].unique()
         if not os.path.isfile(encf):
             lb = LabelEncoder()
