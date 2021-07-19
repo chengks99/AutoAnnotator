@@ -218,22 +218,22 @@ if __name__ == '__main__':
                     'matching': {'sedan': 'sedan', 'van': 'van', 'bus': 'bus', 'SUV': 'suv', 'lorry': 'lorry'},
                     'augmentation': True,
                     'data_filter': {'label': ['vehicle']},
-                    #'prefix': 'type_vehicle',
-                    'ignore': True
+                    'prefix': 'type_vehicle',
+                    'ignore': False
                 },
                 'occlusion': {
                     'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
                     'augmentation': False,
                     'data_filter': {'label': ['vehicle']},
-                    #'prefix': 'occlusion_vehicle',
+                    'prefix': 'occlusion_vehicle',
                     'second_class': 'type',
-                    'ignore': False
+                    'ignore': True
                 },
                 'view': {
                     'matching': {'back': 'back', 'front': 'front', 'side-45-degree': 'side45', 'side': 'side'},
                     'augmentation': False,
                     'data_filter': {'label': ['cyclist', 'biker']},
-                    #'prefix': 'view_cyclist_biker',
+                    'prefix': 'view_cyclist_biker',
                     'ignore': True
                 }
             }
