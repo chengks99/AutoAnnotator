@@ -133,8 +133,7 @@ class MobileNetClassifier (ModellingBase, Evaluation):
         self.model = None
 
         ModellingBase.__init__(self)
-        Evaluation.__init__(self)
-
+        
     # classification layer
     def _get_output_layer (self, baseOut):
         clsModel = Flatten()(baseOut)
@@ -190,7 +189,7 @@ class MobileNetClassifier (ModellingBase, Evaluation):
             self.model = load_model(modelf)
 
     # perform prediction
-    def predict_data (self, modelf='cls-mobileNet.h5', data=None, eClass=None):
+    def predict_data (self, modelf='cls-mobileNet.h5', data=None, eClass=None, labelling=[]):
         data = self.data['test'] if data is None else data
         testData, testOutput = self.df_to_input(data)
         if data is None:
@@ -202,7 +201,8 @@ class MobileNetClassifier (ModellingBase, Evaluation):
         print ('TestScore: {:.2f}, Accuracy: {:.2f}'.format(score, acc))
         pred = self.model.predict(testData)
 
-        self.classification_result(data, testOutput, pred, eClass)
+        Evaluation.__init__(self, modelf)
+        self.classification_result(data, testOutput, pred, eClass, modelf, labelling)
 
         #self.cls_res_output(testOutput, pred)
         #self.cls_res_output_by_class(data, testOutput, pred)
@@ -217,7 +217,6 @@ class MobileNetRegressor (ModellingBase, Evaluation):
         self.model = None
 
         ModellingBase.__init__(self)
-        Evaluation.__init__(self)
     
     # regressor layer
     def _get_output_layer (self, baseOut):
@@ -283,4 +282,5 @@ class MobileNetRegressor (ModellingBase, Evaluation):
             self.model = load_model(modelf)
         
         pred = self.model.predict(testData)
-        self.regression_result(testOutput, pred, eClass)
+        Evaluation.__init__(self, modelf)
+        self.regression_result(testOutput, pred, eClass, modelf)

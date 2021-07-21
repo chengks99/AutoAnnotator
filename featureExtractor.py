@@ -265,9 +265,13 @@ class FeatureExtractor(object):
         with open(encf, 'rb') as handle: lb = pickle.load(handle) 
 
         allOutput = np.array([x for x in dic[outHeader] if not x is None])
+        uniOut = np.unique(allOutput)
+        labelling = [None for x in uniOut]
         for l in np.unique(allOutput):
             e = lb.transform(np.array([l]))
+            labelling[e[0]] = l
             print ('Output of {} transform to {}'.format(l, e[0]))
+        return labelling
 
 
 

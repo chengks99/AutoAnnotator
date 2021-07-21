@@ -100,8 +100,11 @@ class AutoAttributeDetector (FeatureExtractor):
     
     # print output decoder
     def _print_decoded_output (self, key):
+        self.labelling = None
         for k in self.fvData.keys():
-            self.print_output_encoder(self.fvData[k], key)
+            labelling = self.print_output_encoder(self.fvData[k], key)
+            if self.labelling is None:
+                self.labelling = labelling
 
     # get default configuration dictionary
     def _get_cfg (self, outHeader, **kwargs):
@@ -137,8 +140,8 @@ class AutoAttributeDetector (FeatureExtractor):
         if 'train' in clsData.keys() and 'test' in clsData.keys():
             classifier.build_model(augmentation=cfg['augmentation'])
             classifier.train_model(modelf=modelf, epochs=cfg['epochs'], batch_size=cfg['batch_size'])
-        pred = classifier.predict_data(modelf=modelf, eClass=cfg['second_class'])
         self._print_decoded_output(outHeader)
+        pred = classifier.predict_data(modelf=modelf, eClass=cfg['second_class'], labelling=self.labelling)        
         
     # regression
     def attr_reg (self, params, outHeader):
@@ -219,15 +222,15 @@ if __name__ == '__main__':
                     'augmentation': True,
                     'data_filter': {'label': ['vehicle']},
                     'prefix': 'type_vehicle',
-                    'ignore': False
+                    'ignore': True
                 },
                 'occlusion': {
                     'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
                     'augmentation': False,
                     'data_filter': {'label': ['vehicle']},
-                    'prefix': 'occlusion_vehicle',
+                    #'prefix': 'occlusion_vehicle',
                     'second_class': 'type',
-                    'ignore': True
+                    'ignore': False
                 },
                 'view': {
                     'matching': {'back': 'back', 'front': 'front', 'side-45-degree': 'side45', 'side': 'side'},
