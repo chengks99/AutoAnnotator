@@ -75,52 +75,6 @@ class ModellingBase (object):
             return lrate
         lrate = LearningRateScheduler(step_decay)
         return [cp, el, lrate]
-    
-    '''
-    # classification confusion matrix printout 
-    def cls_res_output (self, act, pred):            
-        conf_matrix = confusion_matrix(act.argmax(axis=1), pred.argmax(axis=1))
-        print(conf_matrix)
-        outList = np.array(range(len(act[0])))
-        multiLabel_matrix = multilabel_confusion_matrix(act.argmax(axis=1), pred.argmax(axis=1), labels=outList)
-        print(multiLabel_matrix)
-
-    # classificaion result print out by class
-    def cls_res_output_by_class (self, data, act, pred):
-        objType = data[self.objLabelHead].to_numpy().tolist()
-        resDic = {}
-        actLabel = act.argmax(axis=1)
-        predLabel = pred.argmax(axis=1)
-        for x in range(len(act)):
-            ac = int(actLabel[x])
-            pe = int(predLabel[x])
-            if not ac in resDic:
-                resDic[ac] = {}
-            t = objType[x]
-            if not t in resDic[ac]:
-                resDic[ac][t] = {'correct': 0, 'wrong': 0}
-            if ac == pe:
-                resDic[ac][t]['correct'] += 1
-            else:
-                resDic[ac][t]['wrong'] += 1
-        for k, v in resDic.items():
-            for tk, tv in v.items():
-                pct = tv['correct'] / (tv['correct'] + tv['wrong'])
-                print ('{}, type: {}, acc: {}'.format(k, tk, pct))
-    
-    # regression result output
-    def reg_res_output (self, act, pred):
-        resList = []
-        for a, p in zip(list(act), list(pred)):
-            print ('{:.2f} -> {:.2f}, diff: {:.2f}'.format(a, p[0], a-p[0]))
-            resList.append(a - p[0])
-        resList = np.array(resList)
-
-        mean = np.mean(resList)
-        std = np.std(resList)
-
-        print ('Regression Result: Mean: {:.2f}%, Std: {:.2f}%'.format(mean, std))
-        '''
 
 # MobileNet Classifier
 class MobileNetClassifier (ModellingBase, Evaluation):
@@ -197,8 +151,8 @@ class MobileNetClassifier (ModellingBase, Evaluation):
         if self.model is None and os.path.isfile(modelf):
             self.model = load_model(modelf)
         
-        score, acc = self.model.evaluate(testData, testOutput, batch_size=32)
-        print ('TestScore: {:.2f}, Accuracy: {:.2f}'.format(score, acc))
+        #score, acc = self.model.evaluate(testData, testOutput, batch_size=32)
+        #print ('TestScore: {:.2f}, Accuracy: {:.2f}'.format(score, acc))
         pred = self.model.predict(testData)
 
         Evaluation.__init__(self, modelf)

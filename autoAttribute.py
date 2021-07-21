@@ -14,12 +14,16 @@ class AutoAttributeDetector (FeatureExtractor):
         self.trainf = kwargs.pop('trainf', None)
         self.testf = kwargs.pop('testf', None)
         self.evalf = kwargs.pop('evalf', None)
+        self.isKitti = kwargs.pop('isKitti', False)
 
         self.data = {
             'train': self._get_data(self.trainf),
             'test': self._get_data(self.testf),
             'eval': self._get_data(self.evalf)
         }
+
+        if self.isKitti and 'train' in self.data:
+            self.data['train'] = self.data['train'].head(1000)
     
     # set evaluation data
     def set_eval_data (self, evalf):
@@ -115,11 +119,11 @@ class AutoAttributeDetector (FeatureExtractor):
         cfg = {}
         cfg['augmentation'] = kwargs.pop('augmentation', False)
         cfg['nn'] = kwargs.pop('nn', 'mobileNet')
-        cfg['epochs'] = kwargs.pop('epochs', 200)
+        cfg['epochs'] = kwargs.pop('epochs', 1 if self.isKitti else 200)
         cfg['batch_size'] = kwargs.pop('batch_size', 32)
         cfg['input_tensor'] = kwargs.pop('input_tensor', (224,224,3))
         cfg['feature_range'] = kwargs.pop('feature_range', None)
-        cfg['data_filter'] = kwargs.pop('data_filter', [])
+        cfg['data_filter'] = kwargs.pop('data_filter', {})
         cfg['prefix'] = kwargs.pop('prefix', outHeader)
         cfg['second_class'] = kwargs.pop('second_class', None)
         return cfg        
@@ -207,16 +211,20 @@ if __name__ == '__main__':
             }, 
             'rotation_y': {
                 'ranging': {'default': 'side', 'back': [[-1.67, -1.33], [0.33, 0.67]], 'front': [[1.33, 1.67], [-0.67, -0.33]]},
+                'ignore': True
             },
             'label': {
                 'augmentation': True,
+                'ignore': True
             },
             'alpha': {
                 'method': 'regression',
-                'feature_range': (0,1)
+                'feature_range': (0,1),
+                'ignore': True
             },
             'truncated': {
-                'method': 'regression'
+                'method': 'regression',
+                'ignore': True
             }
         }
     else:
@@ -248,7 +256,7 @@ if __name__ == '__main__':
     # attribute detector sample usage
     DEVELOPMENT = True
     if DEVELOPMENT:
-        attrDet = AutoAttributeDetector(trainf=args.trainfile, testf=args.testfile)
+        attrDet = AutoAttributeDetector(trainf=args.trainfile, testf=args.testfile, isKitti=args.kitti)
     else:
         attrDet = AutoAttributeDetector(evalf=args.evalfile)
 

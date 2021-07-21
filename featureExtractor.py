@@ -128,8 +128,8 @@ class FeatureExtractor(object):
         # calculate offset to composite two image
         off_w = round((base_w - crop_w) / 2)
         off_h = round((base_h - crop_h) / 2)
-        base_img.paste(cropped, (off_w, off_h))       
-        base_img.save('tt22t.png')
+        base_img.paste(cropped, (off_w, off_h))
+        base_img.save(cName)
 
     # output lbl conversion for range
     def _get_ranging_output (self, outDict, out):
