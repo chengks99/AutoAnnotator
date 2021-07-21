@@ -27,6 +27,7 @@ class Evaluation(object):
             if not ac in resDic:
                 resDic[ac] = {}
             t = objType[x]
+            if t is None: continue
             if not t in resDic[ac]:
                 resDic[ac][t] = {'correct': 0, 'wrong': 0}
             if ac == pe:
@@ -42,7 +43,6 @@ class Evaluation(object):
         self._basic_cf(act, pred)
         self._out_by_class(data, act, pred, eClass)
 
-
     def regression_result (self, act, pred, eClass):
         resList = []
         for a, p in zip(list(act), list(pred)):
@@ -53,4 +53,4 @@ class Evaluation(object):
         mean = np.mean(resList)
         std = np.std(resList)
 
-        print ('Regression Result: Mean: {:.2f}%, Std: {:.2f}%'.format(mean, std))
+        print ('Regression Result: Mean: {:.2f}%, Std: {:.2f}%'.format(mean, std)

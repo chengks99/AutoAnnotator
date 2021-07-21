@@ -60,7 +60,7 @@ class AutoAttributeDetector (FeatureExtractor):
                     self.data[key] = pickle.load(handle)
     
     # convert data into dictionary type: {'train': {'data': [], 'occluded': [], 'label': [] ...}}
-    def get_data_output (self, outDict={}, objLabelHead='label', indexHead='indexID', target_size=(224,224), outf={'train': 'trainData.pickle', 'test': 'testData.pickle', 'eval': 'evalData.pickle'}):
+    def get_data_output (self, outDict={}, objLabelHead='label', indexHead='indexID', target_size=(224,224), outPrefix=''):
         self.objLabelHead = objLabelHead
         self.indexHead = indexHead
         self.fvData = {}
@@ -68,11 +68,15 @@ class AutoAttributeDetector (FeatureExtractor):
         for key, data in self.data.items():
             if data is None: continue
             print ('Get Data & Output for {} data'.format(key))
-            if not os.path.isfile(outf[key]):
-                self.fvData[key] = self.img2arr(data, outHeader=outHeader, outDict=outDict, objLabelHead=objLabelHead, indexHead=indexHead, target_size=target_size)
-                with open(outf[key], 'wb') as handle: pickle.dump(self.fvData[key], handle)
+            if outPrefix == '': 
+                outf = '{}Data.pickle'.format(key)
             else:
-                with open(outf[key], 'rb') as handle:
+                outf = '{}_{}Data.pickle'.format(outPrefix, key)
+            if not os.path.isfile(outf):
+                self.fvData[key] = self.img2arr(data, outHeader=outHeader, outDict=outDict, objLabelHead=objLabelHead, indexHead=indexHead, target_size=target_size)
+                with open(outf, 'wb') as handle: pickle.dump(self.fvData[key], handle)
+            else:
+                with open(outf, 'rb') as handle:
                     self.fvData[key] = pickle.load(handle)
    
     # filter data
@@ -247,7 +251,7 @@ if __name__ == '__main__':
 
     #attrDet.data_preprocessing(grey_scale='white', save_img=True)
     attrDet.data_preprocessing()
-    attrDet.get_data_output(outDict=outDict, objLabelHead='label')
+    attrDet.get_data_output(outDict=outDict, objLabelHead='label', outPrefix='type-occ-view')
 
     # loopping for attribute detection
     for key, value in outDict.items():
