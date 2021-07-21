@@ -76,4 +76,4 @@ class Evaluation(object):
         mean = np.mean(resList)
         std = np.std(resList)
 
-        print ('Regression Result: Mean: {:.2f}%, Std: {:.2f}%'.format(mean, std))
+        print ('Regression Result: Mean: {:.2f}%, Std: {:.2f}%'.format(mean, std)
