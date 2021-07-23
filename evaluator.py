@@ -84,7 +84,7 @@ class Evaluation(object):
             if not ac in resDic:
                 resDic[ac] = {}
             t = objType[x]
-            if t is None: continue
+            #if t is None: continue
             if not t in resDic[ac]:
                 resDic[ac][t] = {'correct': 0, 'wrong': 0}
             if ac == pe:

@@ -176,12 +176,10 @@ class FeatureExtractor(object):
     # get img array and output
     #   imgPathHeader: imgPathname
     #   outHeader: list of output header need to extract
-    #   outDict: dictionary for output condition with output header as key. 
-    #           outDict = {'occluded': {'0': 'no', '1': 'small', '2': 'high'}}
-    #               will convert output 0 to no, 1 to small, 2 to high
+    #   inputList: list of dictionary for output condition with output header as key. 
     #   outf: output dataframe
     #   target_size: NN target input size
-    def img2arr (self, df, imgPathHeader='objImagePath', outHeader=[], outDict={}, objLabelHead='label', indexHead='indexID', target_size=(224, 224)):
+    def img2arr (self, df, imgPathHeader='objImagePath', outHeader=[], inputList=[], objLabelHead='label', indexHead='indexID', target_size=(224, 224)):
         dataList = []
         for index, row in df.iterrows():
             dic = {}
@@ -195,6 +193,12 @@ class FeatureExtractor(object):
 
             for lh in outHeader:
                 lbl = row[lh]
+                for il in inputList:
+                    data_filter = il.get('data_filter', None)
+                    if data_filter is None or dic[objLabelHead] in data_filter:
+                        
+                    
+
                 if lh in outDict.keys():
                     if 'ranging' in outDict[lh]:
                         lbl = self._get_ranging_output(outDict[lh]['ranging'], lbl)

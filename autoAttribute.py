@@ -63,12 +63,22 @@ class AutoAttributeDetector (FeatureExtractor):
                 with open(df_file, 'rb') as handle:
                     self.data[key] = pickle.load(handle)
     
+    # get list of desire attribute
+    def _get_outHeader (self, inputList):
+        outHeader = []
+        for l in inputList:
+            attr = l.get('attribute', None)
+            if attr is None: continue
+            if not attr in outHeader:
+                outHeader.append(attr)
+        return outHeader
+
     # convert data into dictionary type: {'train': {'data': [], 'occluded': [], 'label': [] ...}}
-    def get_data_output (self, outDict={}, objLabelHead='label', indexHead='indexID', target_size=(224,224), outPrefix=''):
+    def get_data_output (self, inputList=[], objLabelHead='label', indexHead='indexID', target_size=(224,224), outPrefix=''):
         self.objLabelHead = objLabelHead
         self.indexHead = indexHead
         self.fvData = {}
-        outHeader = outDict.keys()
+        outHeader = self._get_outHeader(inputList)
         for key, data in self.data.items():
             if data is None: continue
             print ('Get Data & Output for {} data'.format(key))
@@ -77,7 +87,7 @@ class AutoAttributeDetector (FeatureExtractor):
             else:
                 outf = '{}_{}Data.pickle'.format(outPrefix, key)
             if not os.path.isfile(outf):
-                self.fvData[key] = self.img2arr(data, outHeader=outHeader, outDict=outDict, objLabelHead=objLabelHead, indexHead=indexHead, target_size=target_size)
+                self.fvData[key] = self.img2arr(data, outHeader=outHeader, inputList=inputList, objLabelHead=objLabelHead, indexHead=indexHead, target_size=target_size)
                 with open(outf, 'wb') as handle: pickle.dump(self.fvData[key], handle)
             else:
                 with open(outf, 'rb') as handle:
@@ -203,55 +213,80 @@ if __name__ == '__main__':
 
     # input parameters
     if args.kitti:
-        outDict = {
-            'occluded': {
+        inputList = [
+            {
+                'attribute': 'occluded',
                 'matching': {'0.0': 'no', '1.0': 'small', '2.0': 'high'},
                 'augmentation': True,
                 'data_filter': {'label': ['Car', 'Pedestrian', 'Van']}
             }, 
-            'rotation_y': {
+            {
+                'attribute': 'rotation_y',
                 'ranging': {'default': 'side', 'back': [[-1.67, -1.33], [0.33, 0.67]], 'front': [[1.33, 1.67], [-0.67, -0.33]]},
                 'ignore': True
             },
-            'label': {
+            {
+                'attribute': 'label',
                 'augmentation': True,
                 'ignore': True
             },
-            'alpha': {
+            {
+                'attribute': 'alpha',
                 'method': 'regression',
                 'feature_range': (0,1),
                 'ignore': True
             },
-            'truncated': {
+            {
+                'attribute': 'truncated',
                 'method': 'regression',
                 'ignore': True
             }
-        }
+        ]
     else:
-        outDict = {
-                'type' : {
-                    'matching': {'sedan': 'sedan', 'van': 'van', 'bus': 'bus', 'SUV': 'suv', 'lorry': 'lorry'},
-                    'augmentation': True,
-                    'data_filter': {'label': ['vehicle']},
-                    'prefix': 'type_vehicle',
-                    'ignore': True
-                },
-                'occlusion': {
-                    'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
-                    'augmentation': False,
-                    'data_filter': {'label': ['vehicle']},
-                    #'prefix': 'occlusion_vehicle',
-                    'second_class': 'type',
-                    'ignore': False
-                },
-                'view': {
-                    'matching': {'back': 'back', 'front': 'front', 'side-45-degree': 'side45', 'side': 'side'},
-                    'augmentation': False,
-                    'data_filter': {'label': ['cyclist', 'biker']},
-                    'prefix': 'view_cyclist_biker',
-                    'ignore': True
-                }
+        inputList = [
+            {
+                'attribute': 'type'
+                'matching': {'sedan': 'sedan', 'van': 'van', 'bus': 'bus', 'SUV': 'suv', 'lorry': 'lorry'},
+                'augmentation': True,
+                'data_filter': {'label': ['vehicle']},
+                'prefix': 'type_vehicle',
+                'ignore': True
+            },
+            {
+                'attribute': 'occlusion'
+                'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
+                'augmentation': False,
+                'data_filter': {'label': ['vehicle']},
+                #'prefix': 'occlusion_vehicle',
+                'second_class': 'type',
+                'ignore': False
+            },
+            {
+                'attribute': 'view'
+                'matching': {'back': 'back', 'front': 'front', 'side-45-degree': 'side45', 'side': 'side'},
+                'augmentation': False,
+                'data_filter': {'label': ['cyclist', 'biker']},
+                'prefix': 'view_cyclist_biker',
+                'ignore': True
+            },
+            {
+                'attribute': 'occlusion'
+                'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
+                'augmentation': False,
+                'data_filter': {'label': ['pedestrian']},
+                'prefix': 'occlusion_pedestrian',
+                'ignore': True
+            },
+            {
+                'attribute': 'occlusion'
+                'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
+                'augmentation': False,
+                'data_filter': {'label': ['vehicle', 'pedestrian']},
+                'prefix': 'occlusion_vehicle_pedestrian',
+                'second_class': 'type',
+                'ignore': True
             }
+        ]
     
     # attribute detector sample usage
     DEVELOPMENT = True
@@ -262,17 +297,23 @@ if __name__ == '__main__':
 
     #attrDet.data_preprocessing(grey_scale='white', save_img=True)
     attrDet.data_preprocessing()
-    attrDet.get_data_output(outDict=outDict, objLabelHead='label', outPrefix='type-occ-view')
+    attrDet.get_data_output(inputList=inputList, objLabelHead='label', outPrefix='type-occ-view')
 
     # loopping for attribute detection
+    for value in inputList:
     for key, value in outDict.items():
         method = value.get('method', 'classification')
-        # for debugging purpose
+        attr = value.get('attribute', None)
+        
+        if attr is None:
+            print ('Attribute key cannot be None')
+            continue
+
         if value.get('ignore', False):
-            print ('Ignore {} {} as per configuration'.format(key, method))
+            print ('Ignore {} {} as per configuration'.format(attr, value.get('prefix', '')))
             continue
 
         if method == 'classification':
-            attrDet.attr_cls(value, outHeader=key)
+            attrDet.attr_cls(value, outHeader=attr)
         elif method == 'regression':
-            attrDet.attr_reg(value, outHeader=key)
+            attrDet.attr_reg(value, outHeader=attr)
