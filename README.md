@@ -40,14 +40,14 @@ Dictionary to store input parameter. This input dictionary contains two keys:
 | **convert** | Use to convert original data into category based for classification. This field is in dictionary base with attribute name as key follow by configuration|
 | **config**  | list of attribute configuration |
 
-</br></br>
+Explanation for inputParams['convert']:
 
 | **convert** | **Descriptions**  |
 |-------------|-------------------|
 |**matching**|_CLASSIFICATION_ paramter. Convert integer/float value into string category.</br> For example **{'0.0': 'no', '1.0': 'small', '2.0': 'high'}** will convert data with _key_ into _value_.</br> This is useful for script to form one hot encoding labelling. **_matching_** KEY CANNOT WORK WITH **_ranging_**. USER SHOULD CHOOSE EITHER ONE BASED ON DATA INPUT FORMAT.|
 |**ranging**|_CLASSIFICATION_ parameter. Convert a range of integer/float value into string category. User should also defined _default_ in this setting.</br> For example **{'default': 'side', 'back': [[-1.67, -1.33], [0.33, 0.67]], 'front': [[1.33, 1.67], [-0.67, -0.33]]}** will firstly define all data as _side_. System will consider data as _back_ if it value between -1.67 to -1.33 and 0.33 to 0.67.</br>  This is useful for script to form one hot encoding labelling. **_ranging_** KEY CANNOT WORK WITH **_matching_**. USER SHOULD CHOOSE EITHER ONE BASED ON DATA INPUT FORMAT.|
 
-</br></br>
+Explanation of parameter setting for inputParams['config']:
 
 | **config**  | **Descriptions**  |
 |-------------|-------------------|
