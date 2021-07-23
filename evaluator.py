@@ -71,10 +71,14 @@ class Evaluation(object):
 
     # calculate accuracy for each class and plot the output
     def _out_by_class (self, data, act, pred, eClass):
+        labelType = data[self.objLabelHead].to_numpy().tolist()
+        objType = []
         if not eClass is None:
-            objType = data[eClass].to_numpy().tolist()
+            eType = data[eClass].to_numpy().tolist()
+            for e, l in zip(eType, labelType):
+                objType.append(l if e is None else e)
         else:
-            objType = data[self.objLabelHead].to_numpy().tolist()
+            objType = labelType
         actLabel = act.argmax(axis=1)
         predLabel = pred.argmax(axis=1)
         resDic = {}
@@ -84,7 +88,6 @@ class Evaluation(object):
             if not ac in resDic:
                 resDic[ac] = {}
             t = objType[x]
-            #if t is None: continue
             if not t in resDic[ac]:
                 resDic[ac][t] = {'correct': 0, 'wrong': 0}
             if ac == pe:
@@ -95,7 +98,7 @@ class Evaluation(object):
         for k, v in resDic.items():
             for tk, tv in v.items():
                 pct = tv['correct'] / (tv['correct'] + tv['wrong'])
-                print ('{}, type: {}, acc: {:.3f}'.format(self.labelling[k], tk, pct))
+                print ('{}, type: {}, precision: {}/{} ({:.3f})'.format(self.labelling[k], tk, tv['correct'], (tv['correct'] + tv['wrong']), pct))
                 dic = {}
                 dic['type'] = self.labelling[k]
                 dic['label'] = tk
