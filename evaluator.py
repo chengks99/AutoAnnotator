@@ -32,7 +32,7 @@ class Evaluation(object):
             outSuffix = '{}.png'.format(outSuffix)
         outf = '{}-{}'.format(self.outPrefix, outSuffix)
         title = os.path.basename(outf).split('.')[0]
-        splot = sns.catplot(data=df, x=x, y=y, hue=hue, kind=kind).set(title=title)
+        splot = sns.catplot(data=df, x=x, y=y, hue=hue, kind=kind, height=8.27, aspect=11.7/8.27).set(title=title)
         splot.set(ylim=ylim)
 
         if value:
@@ -105,7 +105,7 @@ class Evaluation(object):
                 dic['acc'] = pct
                 resPlot.append(dic)
         df = pd.DataFrame(resPlot)
-        self.sns_catPlot(df, x='type', y='acc', hue='label', outSuffix='acc-by-type.png')        
+        self.sns_catPlot(df, x='type', y='acc', hue='label', outSuffix='precision-by-type.png')        
 
     # evaluator for classification result
     def classification_result (self, data, act, pred, eClass, modelf, labelling):
