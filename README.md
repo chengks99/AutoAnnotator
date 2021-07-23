@@ -5,8 +5,10 @@ This project working to provide auto attribute detection for detected object in 
 |   **files/directories**    |   **Descriptions**   |
 |----------------------------|---------------------|
 |**autoAttribute.py**    |main code to handle data input and call repective library|
+|**evaluator.py** | evaluate auto attribute model output |
 |**featureExtractor.py**| module to extract feature from image and label encoding|
-|**modelling**| module to perform classification or regression|
+|**modelling.py**| module to perform classification or regression|
+|**utils.py** | utilities file to perform labelme->dataframe conversion and train/test splitting  |
 |**README.md**|this document|
 
 ### Command
