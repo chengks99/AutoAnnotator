@@ -14,6 +14,7 @@ This project working to provide auto attribute detection for detected object in 
 ### Command
 ```sh
 $ python autoAttribute.py [-h] [-lm LABELME] [-df DATAFILE] [-sp] [-tr TRAINFILE] [-te TESTFILE] [-ev EVALFILE]
+```
 
 Automatic Attribute Classification Module
 
