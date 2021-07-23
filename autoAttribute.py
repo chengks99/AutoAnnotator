@@ -117,10 +117,10 @@ class AutoAttributeDetector (FeatureExtractor):
         return _data
     
     # print output decoder
-    def _print_decoded_output (self, key):
+    def _print_decoded_output (self, key, prefix):
         self.labelling = None
         for k in self.fvData.keys():
-            labelling = self.print_output_encoder(self.fvData[k], key)
+            labelling = self.print_output_encoder(self.fvData[k], key, prefix)
             if self.labelling is None:
                 self.labelling = labelling
 
@@ -158,7 +158,7 @@ class AutoAttributeDetector (FeatureExtractor):
         if 'train' in clsData.keys() and 'test' in clsData.keys():
             classifier.build_model(augmentation=cfg['augmentation'])
             classifier.train_model(modelf=modelf, epochs=cfg['epochs'], batch_size=cfg['batch_size'])
-        self._print_decoded_output(outHeader)
+        self._print_decoded_output(outHeader, cfg['prefix'])
         pred = classifier.predict_data(modelf=modelf, eClass=cfg['second_class'], labelling=self.labelling)        
         
     # regression

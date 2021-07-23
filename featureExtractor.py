@@ -259,7 +259,7 @@ class FeatureExtractor(object):
         return _df
     
     # print output encoder
-    def print_output_encoder (self, dic, outHeader):
+    def print_output_encoder (self, dic, outHeader, prefix):
         encf = '{}-encoder.pickle'.format(outHeader)
         if not os.path.isfile(encf):
             print ('Unable to locate output encoder file {}'.format(os.path.basename(encf)))
