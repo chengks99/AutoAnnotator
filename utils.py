@@ -1,16 +1,16 @@
 import os, json, copy, pickle, uuid
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 # Extract LabelMe format json into dataframe
 class LabelMeExtractor (object):
     def __init__(self, lmDir, isKitti=False):
+        for lm in lmDir:
+            if not os.path.isdir(lm):
+                raise ValueError('Unable to locate labelme directory of {}'.format(lm))
         self.dir = lmDir
-        if not os.path.isdir(self.dir):
-            raise ValueError('Unable to locate labelme directory: {}'.format(self.dir))
-        self.outf = os.path.join(self.dir, '{}.pickle'.format(os.path.basename(self.dir)))
         self.isKitti = isKitti
-        print (self.outf)
     
     # extract data for each objects
     def _extract_obj_data (self, jsonf):
@@ -38,26 +38,32 @@ class LabelMeExtractor (object):
     # start extraction for each files
     def extraction (self):
         objList = []
-        for root, dirs, files in os.walk(self.dir):
-            for f in files:
-                if not f.endswith('.json'): continue
-                jList = self._extract_obj_data(os.path.join(root, f))
-                if not jList is None:
-                    objList.extend(jList)
+        for lm in self.dir:
+            for root, dirs, files in os.walk(lm):
+                for f in files:
+                    if not f.endswith('.json'): continue
+                    jList = self._extract_obj_data(os.path.join(root, f))
+                    if not jList is None:
+                        objList.extend(jList)
         df = pd.DataFrame(objList)
         return df
     
     # save dataframe
-    def save_file (self, df):
-        with open(self.outf, 'wb') as handle:
+    def save_file (self, df, outPrefix=''):
+        if outPrefix == '':
+            now = datetime.now()
+            outPrefix = now.strftime("%Y%m%d_%H%M%S")
+        outf = os.path.join(os.getcwd(), '{}-labelMe.pickle'.format(outPrefix))
+        with open(outf, 'wb') as handle:
             pickle.dump(df, handle)
-        return self.outf
+        return outf
 
 # train and test set splitting
 class TrainTestSplitter (object):
     def __init__(self, dfPath):
         if not os.path.isfile(dfPath):
             raise ValueError('Unable to locate datafile {}'.format(dfPath))
+        self.dfPath = dfPath
         with open(dfPath, 'rb') as handle:
             self.df = pickle.load(handle)
     
@@ -106,12 +112,11 @@ class TrainTestSplitter (object):
         return True
     
     # save train/test dataset
-    def _save_output (self, traindf, testdf):
-        from datetime import datetime
-        now = datetime.now()
-        dt_string = now.strftime("%Y%m%d_%H%M%S")
-        trainf = os.path.join(os.getcwd(), '{}-traindf.pickle'.format(dt_string))
-        testf = os.path.join(os.getcwd(), '{}-testdf.pickle'.format(dt_string))
+    def _save_output (self, traindf, testdf, outPrefix=''):
+        if outPrefix == '':
+            outPrefix = os.path.basename(self.dfPath).replace('-labelMe.pickle', '')
+        trainf = os.path.join(os.getcwd(), '{}-traindf.pickle'.format(outPrefix))
+        testf = os.path.join(os.getcwd(), '{}-testdf.pickle'.format(outPrefix))
         with open(trainf, 'wb') as handle:
             pickle.dump(traindf, handle)
         with open(testf, 'wb') as handle:
@@ -119,7 +124,7 @@ class TrainTestSplitter (object):
         return trainf, testf
 
     # split train test dataset
-    def train_test_split (self, ratio={'max': 70, 'min': 30, 'step': 5}):
+    def train_test_split (self, ratio={'max': 70, 'min': 30, 'step': 5}, outPrefix=''):
         # get imgList and it unique object list
         imgList = self.df.imagePath.unique()
         lblList = []
@@ -151,7 +156,7 @@ class TrainTestSplitter (object):
                 testdf = self.df[self.df.imagePath.isin(X_test)]
                 res = self.data_checker(traindf, testdf, self.df.label.unique(), ratio)
                 if res:
-                    trainf, testf = self._save_output(traindf, testdf)
+                    trainf, testf = self._save_output(traindf, testdf, outPrefix=outPrefix)
                     SPLIT = False
                     break
         return trainf, testf

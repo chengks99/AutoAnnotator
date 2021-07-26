@@ -32,10 +32,20 @@ optional arguments:
   -ev EVALFILE, --evalfile EVALFILE
                         Specify evaluation datafile (pickle format). This is to auto attribute classification the dataset in actual deployment
 
+### namingParams
+
+Dictionary to store naming prefix for output files. This output prefix only use for output file for data transformation to Auto Attribute Classifier format. User still can define ML output file for each attribute in _inputParams_
+
+| **key** | **Descriptions**  |
+|---------|-------------------|
+|**labelMe**| prefix of pickle file use to store dataframe which retrieved from labelMe JSON file. Default is '' which means that system will use timestamp of 'yyyymmdd_hhmmss' as prefix|
+|**trainTest**| prefix of pickle file use to store train/test data. Default is '' which means that it use same prefix and _labelMe_|
+|**outPrefix**| prefix of pickle which store desired attribute values and object feature. Default is '' which means that system will use unique sorted attribute list as prefix.|
+
 ### inputParams
 
 Dictionary to store input parameter. This input dictionary contains two keys:
-| **key** | **Descriptions**  |
+| **Key** | **Descriptions**  |
 |---------|-------------------|
 | **convert** | Use to convert original data into category based for classification. This field is in dictionary base with attribute name as key follow by configuration|
 | **config**  | list of attribute configuration |

@@ -79,13 +79,12 @@ class AutoAttributeDetector (FeatureExtractor):
         self.indexHead = indexHead
         self.fvData = {}
         outHeader = self._get_outHeader(inputParams.get('config', []))
+        if outPrefix == '':
+            outPrefix = '{}'.format('-'.join(oh for oh in sorted(outHeader)))
         for key, data in self.data.items():
             if data is None: continue
             print ('Get Data & Output for {} data'.format(key))
-            if outPrefix == '': 
-                outf = '{}Data.pickle'.format(key)
-            else:
-                outf = '{}_{}Data.pickle'.format(outPrefix, key)
+            outf = '{}_{}Data.pickle'.format(outPrefix, key)
             if not os.path.isfile(outf):
                 self.fvData[key] = self.img2arr(data, outHeader=outHeader, inputParams=inputParams, objLabelHead=objLabelHead, indexHead=indexHead, target_size=target_size)
                 with open(outf, 'wb') as handle: pickle.dump(self.fvData[key], handle)
@@ -189,7 +188,7 @@ if __name__ == '__main__':
         description='Automatic Attribute Classification Module'
     )
 
-    parser.add_argument('-lm', '--labelMe', type=str, help='Specify directory that contains LabelMe format files', default=None)
+    parser.add_argument('-lm', '--labelMe', nargs='+', help='Specify directory that contains LabelMe format files', default=None)
     parser.add_argument('-df', '--datafile', type=str, help='Specify input datafile', default=None)
     parser.add_argument('-sp', '--split', action='store_true', help='Specify whether or not data need to split train/test', default=False)
     parser.add_argument('-kt', '--kitti', action='store_true', help='Specify whether or not dataset is kitti dataset', default=False)
@@ -197,19 +196,13 @@ if __name__ == '__main__':
     parser.add_argument('-te', '--testfile', type=str, help='Specify testing datafile (pickle format)', default=None)
     parser.add_argument('-ev', '--evalfile', type=str, help='Specify evaluation datafile (pickle format). This is to auto attribute classification the dataset in actual deployment', default=None)
     args = parser.parse_args(sys.argv[1:])
-    
-    # extract LabelMe contains
-    if not args.labelMe is None:
-        from utils import LabelMeExtractor
-        lm = LabelMeExtractor(args.labelMe, isKitti=args.kitti)
-        df = lm.extraction()
-        args.datafile = lm.save_file(df)
-
-    # split data
-    if not args.datafile is None:
-        from utils import TrainTestSplitter
-        tts = TrainTestSplitter(args.datafile)
-        args.trainfile, args.testfile = tts.train_test_split()
+  
+    # defined naming of label. 
+    namingParams = {
+        'labelMe': '',  # use timestamp as prefix if empty string
+        'trainTest': '', # same as labelMe if '' else using this for train/test data output prefix
+        'outPrefix': 'type-occ-view'   # combination of unique sorted attribute list if '' else use this for attribute retrieval file
+    }
 
     # input parameters
     if args.kitti:
@@ -300,6 +293,19 @@ if __name__ == '__main__':
             ]
         }
     
+    # extract LabelMe contains
+    if not args.labelMe is None:
+        from utils import LabelMeExtractor
+        lm = LabelMeExtractor(args.labelMe, isKitti=args.kitti)
+        df = lm.extraction()
+        args.datafile = lm.save_file(df, outPrefix=namingParams.get('labelMe', ''))
+
+    # split data
+    if not args.datafile is None:
+        from utils import TrainTestSplitter
+        tts = TrainTestSplitter(args.datafile)
+        args.trainfile, args.testfile = tts.train_test_split(outPrefix=namingParams.get('trainTest', ''))
+
     # attribute detector sample usage
     DEVELOPMENT = True
     if DEVELOPMENT:
@@ -309,7 +315,7 @@ if __name__ == '__main__':
 
     #attrDet.data_preprocessing(grey_scale='white', save_img=True)
     attrDet.data_preprocessing()
-    attrDet.get_data_output(inputParams=inputParams, objLabelHead='label', outPrefix='type-occ-view')
+    attrDet.get_data_output(inputParams=inputParams, objLabelHead='label', outPrefix=namingParams.get('outPrefix', ''))
 
     # loopping for attribute detection
     for value in inputParams.get('config', []):
