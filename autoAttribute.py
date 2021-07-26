@@ -140,7 +140,6 @@ class AutoAttributeDetector (FeatureExtractor):
     # classification
     def attr_cls (self, params, outHeader, objLabelHead='label'):
         cfg = self._get_cfg(outHeader, **params)
-        print ('Perform {} attribute classification'.format(outHeader))
 
         clsData = self._form_encoding_input_data(outHeader, cfg['data_filter'], cfg['second_class'], cfg['prefix'])
         modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
@@ -163,8 +162,6 @@ class AutoAttributeDetector (FeatureExtractor):
     # regression
     def attr_reg (self, params, outHeader):
         cfg = self._get_cfg(**params)
-        print ('Perform {} Attribute Regression'.format(outHeader))
-        print (cfg)
 
         alphaData = self._form_regressor_input_data(outHeader, feature_range=cfg['feature_range'], second_class=cfg['second_class'], prefix=cfg['prefix'])
         modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
@@ -266,7 +263,7 @@ if __name__ == '__main__':
                     'data_filter': {'label': ['vehicle']},
                     'prefix': 'occlusion_vehicle',
                     'second_class': 'type',
-                    'ignore': False
+                    'ignore': True
                 },
                 {
                     'attribute': 'view',
@@ -280,7 +277,7 @@ if __name__ == '__main__':
                     'augmentation': False,
                     'data_filter': {'label': ['pedestrian']},
                     'prefix': 'occlusion_pedestrian',
-                    'ignore': True
+                    'ignore': False
                 },
                 {
                     'attribute': 'occlusion',
@@ -321,6 +318,8 @@ if __name__ == '__main__':
     for value in inputParams.get('config', []):
         method = value.get('method', 'classification')
         attr = value.get('attribute', None)
+
+        print ('Perform {} attribute {} for {}'.format(attr, method, value.get('prefix', 'Unknown Prefix')))
         
         if attr is None:
             print ('Attribute key cannot be None')
