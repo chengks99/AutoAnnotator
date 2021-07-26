@@ -269,10 +269,13 @@ class FeatureExtractor(object):
         allOutput = np.array([x for x in dic[outHeader] if not x is None])
         uniOut = np.unique(allOutput)
         labelling = [None for x in uniOut]
-        for l in np.unique(allOutput):
-            e = lb.transform(np.array([l]))
-            labelling[e[0]] = l
-            print ('Output of {} transform to {}'.format(l, e[0]))
+        for l in uniOut:
+            try:
+                e = lb.transform(np.array([l]))
+                labelling[e[0]] = l
+                print ('Output of {} transform to {}'.format(l, e[0]))
+            except:
+                continue
         return labelling
 
 
