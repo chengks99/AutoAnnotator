@@ -115,8 +115,8 @@ class TrainTestSplitter (object):
     def _save_output (self, traindf, testdf, outPrefix=''):
         if outPrefix == '':
             outPrefix = os.path.basename(self.dfPath).replace('-labelMe.pickle', '')
-        trainf = os.path.join(os.getcwd(), '{}-traindf.pickle'.format(outPrefix))
-        testf = os.path.join(os.getcwd(), '{}-testdf.pickle'.format(outPrefix))
+        trainf = os.path.join(os.getcwd(), '{}-trainSetInfo.pickle'.format(outPrefix))
+        testf = os.path.join(os.getcwd(), '{}-testSetInfo.pickle'.format(outPrefix))
         with open(trainf, 'wb') as handle:
             pickle.dump(traindf, handle)
         with open(testf, 'wb') as handle:

@@ -51,11 +51,11 @@ class AutoAttributeDetector (FeatureExtractor):
     #   grey_scale = padding area background. [default: original] 
     #                original if use actual image area as padding background
     #                black if pad as black color, white if pad as white color
-    def data_preprocessing (self, imgPathHeader='imagePath', pad_rate=0.2, grey_scale='original', save_img=False):
+    def data_preprocessing (self, imgPathHeader='imagePath', pad_rate=0.2, grey_scale='original', outPrefix='ds', save_img=False):
         for key, data in self.data.items():
             if data is None: continue
             print ('Data preprocessing: Process {} data'.format(key))
-            df_file = '{}df.pickle'.format(key)
+            df_file = '{}-{}df.pickle'.format(outPrefix, key)
             if not os.path.isfile(df_file):
                 data = self.img_padding(data, imgPathHeader, pad_rate=pad_rate, grey_scale=grey_scale, save_img=save_img)
                 with open(df_file, 'wb') as handle: pickle.dump(data, handle)
@@ -140,6 +140,7 @@ class AutoAttributeDetector (FeatureExtractor):
     # classification
     def attr_cls (self, params, outHeader, objLabelHead='label'):
         cfg = self._get_cfg(outHeader, **params)
+        print (cfg)
 
         clsData = self._form_encoding_input_data(outHeader, cfg['data_filter'], cfg['second_class'], cfg['prefix'])
         modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
@@ -162,6 +163,7 @@ class AutoAttributeDetector (FeatureExtractor):
     # regression
     def attr_reg (self, params, outHeader):
         cfg = self._get_cfg(**params)
+        print (cfg)
 
         alphaData = self._form_regressor_input_data(outHeader, feature_range=cfg['feature_range'], second_class=cfg['second_class'], prefix=cfg['prefix'])
         modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
@@ -243,7 +245,7 @@ if __name__ == '__main__':
                     'matching': {'sedan': 'sedan', 'van': 'van', 'bus': 'bus', 'SUV': 'suv', 'lorry': 'lorry'},
                 },
                 'occlusion': {
-                    'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high'},
+                    'matching': {'fully visible': 'no', 'partly occluded': 'small', 'largely occluded': 'high', 'leg occluded': 'leg', 'both wheel occluded': 'wheel2', 'one wheel occluded': 'wheel1', 'body occluded': 'body', 'head occluded': 'head', 'cyclist occluded': 'cyclistOcc', 'bike occluded': 'bikeOcc'},
                 },
                 'view': {
                     'matching': {'back': 'back', 'front': 'front', 'side-45-degree': 'side45', 'side': 'side'},
@@ -263,7 +265,8 @@ if __name__ == '__main__':
                     'data_filter': {'label': ['vehicle']},
                     'prefix': 'occlusion_vehicle',
                     'second_class': 'type',
-                    'ignore': True
+                    'batch_size': 8,
+                    'ignore': False
                 },
                 {
                     'attribute': 'view',
@@ -277,7 +280,7 @@ if __name__ == '__main__':
                     'augmentation': False,
                     'data_filter': {'label': ['pedestrian']},
                     'prefix': 'occlusion_pedestrian',
-                    'ignore': False
+                    'ignore': True
                 },
                 {
                     'attribute': 'occlusion',
@@ -310,17 +313,23 @@ if __name__ == '__main__':
     else:
         attrDet = AutoAttributeDetector(evalf=args.evalfile)
 
-    #attrDet.data_preprocessing(grey_scale='white', save_img=True)
-    attrDet.data_preprocessing()
+    # data preprocessing (image padding) and feature/attribute extraction
+    dfPrefix = ''
+    dic = {'train': args.trainfile, 'test': args.testfile, 'eval': args.evalfile}
+    for k, v in dic.items():
+        if not v is None:
+            dfPrefix = os.path.basename(v).replace('-{}SetInfo.pickle'.format(k), '')
+            break
+    if dfPrefix == '':
+        raise ValueError('Make sure input dataSetInfo is valid')
+    attrDet.data_preprocessing(outPrefix=dfPrefix)
     attrDet.get_data_output(inputParams=inputParams, objLabelHead='label', outPrefix=namingParams.get('outPrefix', ''))
 
     # loopping for attribute detection
     for value in inputParams.get('config', []):
         method = value.get('method', 'classification')
         attr = value.get('attribute', None)
-
-        print ('Perform {} attribute {} for {}'.format(attr, method, value.get('prefix', 'Unknown Prefix')))
-        
+       
         if attr is None:
             print ('Attribute key cannot be None')
             continue
@@ -328,6 +337,8 @@ if __name__ == '__main__':
         if value.get('ignore', False):
             print ('Ignore {} {} as per configuration'.format(attr, value.get('prefix', '')))
             continue
+        
+        print ('Perform {} attribute {} for {}'.format(attr, method, value.get('prefix', 'Unknown Prefix')))
 
         if method == 'classification':
             attrDet.attr_cls(value, outHeader=attr)

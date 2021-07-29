@@ -191,18 +191,17 @@ class FeatureExtractor(object):
             dic[objLabelHead] = row[objLabelHead]
             dic['indexID'] = row.get(indexHead, str(uuid.uuid4()))
 
-            for lh in outHeader:
-                lbl = row[lh]
-                for il in inputParams.get('config', []):
-                    attr = il.get('attribute', None)
-                    if attr is None: continue
-                    if attr in inputParams.get('convert', {}):
-                        _convert = inputParams['convert'][attr]
-                        if 'ranging' in _convert:
-                            lbl = self._get_ranging_output(_convert['ranging'], lbl)
-                        if 'matching' in _convert:
-                            lbl = _convert['matching'].get(str(lbl), None)
-                dic[lh] = lbl
+            for il in inputParams.get('config', []):
+                attr = il.get('attribute', None)
+                if attr is None: continue
+                if attr in dic: continue
+                if attr in inputParams.get('convert', {}):
+                    _convert = inputParams['convert'][attr]
+                    if 'ranging' in _convert:
+                        lbl = self._get_ranging_output(_convert['ranging'], row[attr])
+                    if 'matching' in _convert:
+                        lbl = _convert['matching'].get(str(row[attr]), None)
+                dic[attr] = lbl
             dataList.append(dic)
         return pd.DataFrame(dataList)
     
@@ -234,7 +233,6 @@ class FeatureExtractor(object):
     # get output encoded
     def get_output_encoder (self, df, outHeader, second_class, prefix, objLabelHead, indexHead):
         _df = self._get_data_dic(df, outHeader, second_class, objLabelHead, indexHead)
-
         encf = '{}-encoder.pickle'.format(prefix)
         uniqueOutput = _df[outHeader].unique()
         if not os.path.isfile(encf):

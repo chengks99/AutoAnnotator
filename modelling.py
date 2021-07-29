@@ -40,11 +40,25 @@ class ModellingBase (object):
         return d_class_weights
     
     # convert dataframe into numpy array (input, label)
-    def df_to_input (self, data):
+    def df_to_input (self, data, isTest=False):
         X, y = [], []
+        dupOut = []
+        if not isTest:
+            # duplicate single data to avoid split/test failing
+            dupKey = '{}-dup'.format(self.outHeader)
+            data[dupKey] = data[self.outHeader].apply(np.argmax)
+            uniqueOut = data[dupKey].unique()
+            groupping = data.groupby([dupKey]).size()
+            for uo in uniqueOut:
+                if groupping[uo] == 1:
+                    dupOut.append(uo)
+
         for index, row in data.iterrows():
             X.append(row['data'])
             y.append(row[self.outHeader])
+            if np.argmax(row[self.outHeader]) in dupOut:
+                X.append(row['data'])
+                y.append(row[self.outHeader])
         return np.array(X), np.array(y)
 
     # shuffle input data
@@ -145,14 +159,14 @@ class MobileNetClassifier (ModellingBase, Evaluation):
     # perform prediction
     def predict_data (self, modelf='cls-mobileNet.h5', data=None, eClass=None, labelling=[]):
         data = self.data['test'] if data is None else data
-        testData, testOutput = self.df_to_input(data)
+        testData, testOutput = self.df_to_input(data, isTest=True)
         if data is None:
             raise ValueError('Evaluation data is empty')
         if self.model is None and os.path.isfile(modelf):
             self.model = load_model(modelf)
         
-        #score, acc = self.model.evaluate(testData, testOutput, batch_size=32)
-        #print ('TestScore: {:.2f}, Accuracy: {:.2f}'.format(score, acc))
+        score, acc = self.model.evaluate(testData, testOutput, batch_size=32)
+        print ('TestScore: {:.2f}, Accuracy: {:.2f}'.format(score, acc))
         pred = self.model.predict(testData)
 
         Evaluation.__init__(self, modelf)
@@ -201,7 +215,7 @@ class MobileNetRegressor (ModellingBase, Evaluation):
     # start training/loading model
     def train_model (self, modelf='regressor-mobileNet.h5', epochs=200, batch_size=32):
         trainData, trainOutput = self.df_to_input(self.train)
-        testData, testOutput = self.df_to_input(self.test)
+        testData, testOutput = self.df_to_input(self.test, isTest=True)
         if not os.path.isfile(modelf):
             if self.aug is None:
                 history = self.model.fit(
@@ -229,7 +243,7 @@ class MobileNetRegressor (ModellingBase, Evaluation):
     # prediction
     def predict_data (self, modelf, data=None, eClass=None):
         data = self.data['test'] if data is None else data
-        testData, testOutput = self.df_to_input(data)
+        testData, testOutput = self.df_to_input(data, isTest=True)
         if data is None:
             raise ValueError('Evaluation data is empty')
         if self.model is None and os.path.isfile(modelf):

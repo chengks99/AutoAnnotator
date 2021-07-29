@@ -14,8 +14,11 @@ class Evaluation(object):
     
     # TPR and TNR rate calculation
     def _tpr_tnr (self, matrix):
-        _tnr = float(matrix[0][0]) / (float(matrix[0][0]) + float(matrix[1][0]))
-        _tpr = float(matrix[1][1]) / (float(matrix[0][1]) + float(matrix[1][1])) 
+        try:
+            _tnr = float(matrix[0][0]) / (float(matrix[0][0]) + float(matrix[1][0]))
+            _tpr = float(matrix[1][1]) / (float(matrix[0][1]) + float(matrix[1][1])) 
+        except:
+            return None, None
         return _tpr, _tnr
 
     # seaborn category plotting
@@ -82,6 +85,7 @@ class Evaluation(object):
         actLabel = act.argmax(axis=1)
         predLabel = pred.argmax(axis=1)
         resDic = {}
+        print (len(objType), len(actLabel), len(predLabel))
         for x in range(len(act)):
             ac = int(actLabel[x])
             pe = int(predLabel[x])
