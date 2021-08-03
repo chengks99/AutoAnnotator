@@ -63,16 +63,6 @@ class LabelMeExtractor (object):
         with open(outf, 'rb') as handle:
             pickle.dump(df, handle)
         return outf
-    
-    # save dataframe
-    def save_file (self, df, outPrefix=''):
-        if outPrefix == '':
-            now = datetime.now()
-            outPrefix = now.strftime("%Y%m%d_%H%M%S")
-        outf = os.path.join(os.getcwd(), '{}-labelMe.pickle'.format(outPrefix))
-        with open(outf, 'wb') as handle:
-            pickle.dump(df, handle)
-        return outf
 
 # train and test set splitting
 class TrainTestSplitter (object):

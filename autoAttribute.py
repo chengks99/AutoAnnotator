@@ -213,7 +213,7 @@ if __name__ == '__main__':
             'config': [
                 {
                     'attribute': 'occluded',
-                    'augmentation': True,
+                    'augmentation': False,
                     'data_filter': {'label': ['Car', 'Pedestrian', 'Van']}
                 },
                 {

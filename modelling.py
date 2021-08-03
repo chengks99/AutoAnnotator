@@ -132,6 +132,18 @@ class MobileNetClassifier (ModellingBase, Evaluation):
             trainData, trainOutput = self.shuffle_input(self.train)
             testData, testOutput = self.df_to_input(self.test)
             if self.aug is None:
+                train_gen = ImageDataGenerator().flow(trainData, trainOutput, batch_size=batch_size)
+                val_gen = ImageDataGenerator().flow(testData, testOutput, batch_size=batch_size)
+                history = self.model.fit(
+                    train_gen,
+                    steps_per_epoch=len(trainData) // batch_size,
+                    validation_data=val_gen,
+                    validation_steps=len(testData) // batch_size,
+                    epochs=epochs,
+                    callbacks = self.get_callbacks(modelf),
+                    class_weight=self.get_class_weight(trainOutput)
+                )
+                '''
                 history = self.model.fit(
                     trainData, trainOutput, batch_size=batch_size,
                     steps_per_epoch=len(trainData) // batch_size,
@@ -141,6 +153,7 @@ class MobileNetClassifier (ModellingBase, Evaluation):
                     callbacks = self.get_callbacks(modelf),
                     class_weight=self.get_class_weight(trainOutput)
                 )
+                '''
             else:
                 history = self.model.fit(
                     self.aug.flow(trainData, trainOutput, batch_size),
@@ -218,6 +231,18 @@ class MobileNetRegressor (ModellingBase, Evaluation):
         testData, testOutput = self.df_to_input(self.test, isTest=True)
         if not os.path.isfile(modelf):
             if self.aug is None:
+                train_gen = ImageDataGenerator().flow(trainData, trainOutput)
+                val_gen = ImageDataGenerator().flow(testData, testOutput)
+                history = self.model.fit(
+                    train_gen,
+                    steps_per_epoch=len(trainData) // batch_size,
+                    validation_data=val_gen,
+                    validation_steps=len(testData) // batch_size,
+                    epochs=epochs,
+                    callbacks = self.get_callbacks(modelf),
+                    class_weight=self.get_class_weight(trainOutput)
+                )
+                '''
                 history = self.model.fit(
                     trainData, testData, batch_size=batch_size,
                     steps_per_epoch=len(trainData) // batch_size,
@@ -226,6 +251,7 @@ class MobileNetRegressor (ModellingBase, Evaluation):
                     epochs=epochs,
                     callbacks = self.get_callbacks(modelf)
                 )
+                '''
             else:
                 history = self.model.fit(
                     self.aug.flow(trainData, trainOutput, batch_size),
