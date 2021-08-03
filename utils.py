@@ -38,16 +38,19 @@ class LabelMeExtractor (object):
             objList.append(oDict)
         return objList
 
-    def _get_file_name (self, outPrefix):
+    def _get_file_name (self, outPrefix, baseDir):
         if outPrefix == '':
             now = datetime.now()
             outPrefix = now.strftime("%Y%m%d_%H%M%S")
-        outf = os.path.join(os.getcwd(), '{}-labelMe.pickle'.format(outPrefix))
+        _dir = baseDir
+        if _dir is None:
+            _dir = os.getcwd()
+        outf = os.path.join(baseDir, '{}-labelMe.pickle'.format(outPrefix))
         return outf
 
     # start extraction for each files
-    def extraction (self, outPrefix):
-        outf = self._get_file_name(outPrefix)
+    def extraction (self, outPrefix, baseDir=None):
+        outf = self._get_file_name(outPrefix, baseDir)
         if os.path.isfile(outf):
             return outf
             
@@ -60,7 +63,7 @@ class LabelMeExtractor (object):
                     if not jList is None:
                         objList.extend(jList)
         df = pd.DataFrame(objList)
-        with open(outf, 'rb') as handle:
+        with open(outf, 'wb') as handle:
             pickle.dump(df, handle)
         return outf
 
@@ -118,31 +121,37 @@ class TrainTestSplitter (object):
         return True
     
     # save train/test dataset
-    def _save_output (self, traindf, testdf, outPrefix=''):
-        if outPrefix == '':
-            outPrefix = os.path.basename(self.dfPath).replace('-labelMe.pickle', '')
-        trainf, testf = self._get_file_name(outPrefix)
+    def _save_output (self, traindf, testdf, outPrefix='', baseDir=None):
+        trainf, testf = self._get_file_name(outPrefix, baseDir)
         with open(trainf, 'wb') as handle:
             pickle.dump(traindf, handle)
         with open(testf, 'wb') as handle:
             pickle.dump(testdf, handle)
         return trainf, testf
 
-    def _get_file_name (self, outPrefix):
-        trainf = os.path.join(os.getcwd(), '{}-trainSetInfo.pickle'.format(outPrefix))
-        testf = os.path.join(os.getcwd(), '{}-testSetInfo.pickle'.format(outPrefix))
+    def _get_file_name (self, outPrefix, baseDir):
+        _dir = baseDir
+        if _dir is None:
+            _dir = os.getcwd()
+        if outPrefix == '':
+            outPrefix = os.path.basename(self.dfPath).replace('-labelMe.pickle', '')
+        trainf = os.path.join(_dir, '{}-trainSetInfo.pickle'.format(outPrefix))
+        testf = os.path.join(_dir, '{}-testSetInfo.pickle'.format(outPrefix))
         return trainf, testf
     
-    def _file_exist (self, outPrefix):
-        trainf, testf = self._get_file_name(outPrefix)
+    def _file_exist (self, outPrefix, baseDir):
+        trainf, testf = self._get_file_name(outPrefix, baseDir)
+        print (trainf, testf)
         if os.path.isfile(trainf) and os.path.isfile(testf):
             return True
+        else:
+            return False
 
     # split train test dataset
-    def train_test_split (self, ratio={'max': 70, 'min': 30, 'step': 5}, outPrefix=''):
+    def train_test_split (self, ratio={'max': 70, 'min': 30, 'step': 5}, outPrefix='', baseDir=None):
         # check file exist
-        if self._file_exist(outPrefix):
-            return self._get_file_name(outPrefix)
+        if self._file_exist(outPrefix, baseDir):
+            return self._get_file_name(outPrefix, baseDir)
 
         # get imgList and it unique object list
         imgList = self.df.imagePath.unique()
@@ -175,7 +184,7 @@ class TrainTestSplitter (object):
                 testdf = self.df[self.df.imagePath.isin(X_test)]
                 res = self.data_checker(traindf, testdf, self.df.label.unique(), ratio)
                 if res:
-                    trainf, testf = self._save_output(traindf, testdf, outPrefix=outPrefix)
+                    trainf, testf = self._save_output(traindf, testdf, outPrefix=outPrefix, baseDir=baseDir)
                     SPLIT = False
                     break
         return trainf, testf

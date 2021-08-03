@@ -13,6 +13,9 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 class FeatureExtractor(object):
     def __init__(self):
         print('Init Feature Extractor')
+        self.imgDir = os.path.join(self.baseDir, 'images')
+        if not os.path.isdir(self.imgDir):
+            os.makedirs(self.imgDir)
    
     # obtain object coordinate
     def __get_obj_coord (self, pts):
@@ -85,17 +88,29 @@ class FeatureExtractor(object):
             return os.path.join('/home/sdt-xs/annotator/test', baseName)
     
     # get output image path
-    def _get_img_path (self, row):
+    def _get_img_path (self, row, tag):
         imgPath = row['imagePath']
         # fix for sdt-xs server
         #imgPath = self._fix_for_diff_server(imgPath)
-        imgPrefix = '{}_{}'.format(row['label'], row['group_id'])
+        if row['label'] == 'vehicle' and 'type' in row:
+            imgPrefix = '{}_{}'.format(row['type'], row['indexID'])
+        else:
+            imgPrefix = '{}_{}'.format(row['label'], row['indexID'])
+        
         fname, fext = os.path.splitext(imgPath)
-        return imgPath.replace(fext, '_{}{}'.format(imgPrefix, fext))
+        imgName = os.path.basename(imgPath).replace(fext, '')
+        outf = '{}_{}{}'.format(imgName, imgPrefix, fext)
+        if not tag is None:
+            outDir = os.path.join(self.imgDir, tag)
+            if not os.path.isdir(outDir):
+                os.makedirs(outDir)
+        else:
+            outDir = self.imgDir
+        return os.path.join(outDir, outf)
 
     # get image name and input image with original background
-    def _crop_padding_obj (self, img, row, rate, save_img):
-        cName = self._get_img_path(row)
+    def _crop_padding_obj (self, img, row, rate, tag, save_img):
+        cName = self._get_img_path(row, tag)
         if not save_img: return cName
 
         objCoord = self.__get_obj_coord(row['points'])
@@ -107,8 +122,8 @@ class FeatureExtractor(object):
         return cName
 
     # get image name and input image with white/black padding
-    def _crop_greyscale_obj (self, img, row, rate, gs, save_img):
-        cName = self._get_img_path(row)
+    def _crop_greyscale_obj (self, img, row, rate, gs, tag, save_img):
+        cName = self._get_img_path(row, tag)
         if not save_img: return cName
 
         # obtain object coord and its padding size
@@ -152,7 +167,7 @@ class FeatureExtractor(object):
     #               'original' will pad with actual background, 
     #               'white' pad additional area with white background, 
     #               'black' pad additional area with black background 
-    def img_padding (self, df, imgPathHeader, pad_rate=0.2, grey_scale='original', save_img=False):
+    def img_padding (self, df, imgPathHeader, pad_rate=0.2, grey_scale='original', tag=None, save_img=False):
         for ip in df[imgPathHeader].unique():
             _df = df[df[imgPathHeader] == ip]
 
@@ -164,12 +179,12 @@ class FeatureExtractor(object):
                 print ('Unable to locate image file {}'.format(imgPath))
                 continue
             
-            img = Image.open(imgPath) 
+            img = Image.open(imgPath)
             for index, row in _df.iterrows():
                 if grey_scale == 'original':
-                    objImgPath = self._crop_padding_obj(img, row, pad_rate, save_img)
+                    objImgPath = self._crop_padding_obj(img, row, pad_rate, tag, save_img)
                 else:
-                    objImgPath = self._crop_greyscale_obj(img, row, pad_rate, grey_scale, save_img)
+                    objImgPath = self._crop_greyscale_obj(img, row, pad_rate, grey_scale, tag, save_img)
                 df.loc[index,'objImagePath'] = objImgPath
         return df.dropna(subset=['objImagePath'])
     

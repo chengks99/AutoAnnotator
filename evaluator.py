@@ -10,10 +10,11 @@ from PIL import Image
 from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
 
 class Evaluation(object):
-    def __init__(self, modelf, outHeader):
+    def __init__(self, modelf, outHeader, baseDir):
         print ('Inherit Evaluation Module')
         self.outPrefix = modelf.replace('.h5', '')
         self.outHeader = outHeader
+        self.baseDir = baseDir
     
     # TPR and TNR rate calculation
     def _tpr_tnr (self, matrix):
@@ -37,6 +38,7 @@ class Evaluation(object):
         if not '.' in outSuffix:
             outSuffix = '{}.png'.format(outSuffix)
         outf = '{}-{}'.format(self.outPrefix, outSuffix)
+        outf = os.path.join(self.baseDir, outf)
         title = os.path.basename(outf).split('.')[0]
         splot = sns.catplot(data=df, x=x, y=y, hue=hue, kind=kind, height=8.27, aspect=11.7/8.27).set(title=title)
         splot.set(ylim=ylim)
@@ -162,9 +164,11 @@ class Evaluation(object):
         conv_layer = m.get_layer('block_16_project')
         model = tf.keras.models.Model([m.inputs], [conv_layer.output, m.output])
 
-        outDir = os.path.join(os.getcwd(), 'saliency-{}'.format(self.outHeader))
-        if not os.path.isfile(outDir):
+        outDir = os.path.join(self.baseDir, 'saliency-{}'.format(self.outHeader))
+        if not os.path.isdir(outDir):
             os.makedirs(outDir)
+
+        dfLen = data.shape[0]
 
         for index, row in data.iterrows():
             _input = np.array([row['data']])
@@ -183,7 +187,7 @@ class Evaluation(object):
                 _res = 'C'
             imgf = '{}-{}({:.2f})-{}({:.2f})_{}'.format(_res, _act, _actProb, _pred, _predProb, os.path.basename(row['objImagePath']))
 
-            print ('***************************')
+            print ('********** {}/{} **********'.format(index, dfLen))
             print ('IndexID: {}'.format(row['indexID']))
             print ('ImgPath: {}'.format(row['objImagePath']))
             print ('Labelling: {} ({})'.format(row[self.outHeader], _act))

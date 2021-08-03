@@ -15,6 +15,9 @@ class AutoAttributeDetector (FeatureExtractor):
         self.testf = kwargs.pop('testf', None)
         self.evalf = kwargs.pop('evalf', None)
         self.isKitti = kwargs.pop('isKitti', False)
+        self.baseDir = kwargs.pop('baseDir', None)
+        if self.baseDir is None:
+            self.baseDir = os.getcwd()
 
         self.data = {
             'train': self._get_data(self.trainf),
@@ -24,7 +27,9 @@ class AutoAttributeDetector (FeatureExtractor):
 
         if self.isKitti and 'train' in self.data:
             self.data['train'] = self.data['train'].head(1000)
-    
+        
+        FeatureExtractor.__init__(self)
+          
     # set evaluation data
     def set_eval_data (self, evalf):
         self.data = {'eval': self._get_data(self.evalf)}
@@ -56,8 +61,9 @@ class AutoAttributeDetector (FeatureExtractor):
             if data is None: continue
             print ('Data preprocessing: Process {} data'.format(key))
             df_file = '{}-{}df.pickle'.format(outPrefix, key)
+            df_file = os.path.join(self.baseDir, df_file)
             if not os.path.isfile(df_file):
-                data = self.img_padding(data, imgPathHeader, pad_rate=pad_rate, grey_scale=grey_scale, save_img=save_img)
+                data = self.img_padding(data, imgPathHeader, pad_rate=pad_rate, grey_scale=grey_scale, tag=key, save_img=save_img)
                 with open(df_file, 'wb') as handle: pickle.dump(data, handle)
             else:
                 with open(df_file, 'rb') as handle:
@@ -85,6 +91,7 @@ class AutoAttributeDetector (FeatureExtractor):
             if data is None: continue
             print ('Get Data & Output for {} data'.format(key))
             outf = '{}_{}Data.pickle'.format(outPrefix, key)
+            outf = os.path.join(self.baseDir, outf)
             if not os.path.isfile(outf):
                 self.fvData[key] = self.img2arr(data, outHeader=outHeader, inputParams=inputParams, objLabelHead=objLabelHead, indexHead=indexHead, target_size=target_size)
                 with open(outf, 'wb') as handle: pickle.dump(self.fvData[key], handle)
@@ -144,10 +151,11 @@ class AutoAttributeDetector (FeatureExtractor):
 
         clsData = self._form_encoding_input_data(outHeader, cfg['data_filter'], cfg['second_class'], cfg['prefix'])
         modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
+        modelf = os.path.join(self.baseDir, modelf)
         classifier = None
         if cfg['nn'] == 'mobileNet':
             from modelling import MobileNetClassifier
-            classifier = MobileNetClassifier(clsData, outHeader=outHeader, objLabelHead=objLabelHead, input_tensor=cfg['input_tensor'])
+            classifier = MobileNetClassifier(clsData, outHeader=outHeader, objLabelHead=objLabelHead, input_tensor=cfg['input_tensor'], baseDir=self.baseDir)
 
         #* Developer can add own classifier here
 
@@ -167,10 +175,11 @@ class AutoAttributeDetector (FeatureExtractor):
 
         alphaData = self._form_regressor_input_data(outHeader, feature_range=cfg['feature_range'], second_class=cfg['second_class'], prefix=cfg['prefix'])
         modelf='{}-{}.h5'.format(cfg['prefix'], cfg['nn'])
+        modelf = os.path.join(self.baseDir, modelf)
         regressor = None
         if cfg['nn'] == 'mobileNet':
             from modelling import MobileNetRegressor
-            regressor = MobileNetRegressor(alphaData, outHeader=outHeader, input_tensor=cfg['input_tensor'])
+            regressor = MobileNetRegressor(alphaData, outHeader=outHeader, input_tensor=cfg['input_tensor'], BaseDir=self.baseDir)
 
         #* Developer can add own regressor here
 
@@ -198,7 +207,8 @@ if __name__ == '__main__':
   
     # defined naming of label. 
     namingParams = {
-        'labelMe': '',  # use timestamp as prefix if empty string
+        'baseDir': 'ld3-8',
+        'labelMe': 'DS3-8',  # use timestamp as prefix if empty string
         'trainTest': '', # same as labelMe if '' else using this for train/test data output prefix
         'outPrefix': 'type-alpha-truncated'   # combination of unique sorted attribute list if '' else use this for attribute retrieval file
     }
@@ -284,24 +294,29 @@ if __name__ == '__main__':
             ]
         }
     
+    if not namingParams.get('baseDir', None) is None:
+        namingParams['baseDir'] = os.path.join(os.getcwd(), namingParams['baseDir'])
+        if not os.path.isdir(namingParams['baseDir']):
+            os.makedirs(namingParams['baseDir'])
+    
     # extract LabelMe contains
     if not args.labelMe is None:
         from utils import LabelMeExtractor
         lm = LabelMeExtractor(args.labelMe, isKitti=args.kitti)
-        args.datafile = lm.extraction(outPrefix=namingParams.get('labelMe', ''))
+        args.datafile = lm.extraction(outPrefix=namingParams.get('labelMe', ''), baseDir=namingParams.get('baseDir', None))
 
     # split data
     if not args.datafile is None:
         from utils import TrainTestSplitter
         tts = TrainTestSplitter(args.datafile)
-        args.trainfile, args.testfile = tts.train_test_split(outPrefix=namingParams.get('trainTest', ''))
+        args.trainfile, args.testfile = tts.train_test_split(outPrefix=namingParams.get('trainTest', ''), baseDir=namingParams.get('baseDir', None))
 
     # attribute detector sample usage
     DEVELOPMENT = True
     if DEVELOPMENT:
-        attrDet = AutoAttributeDetector(trainf=args.trainfile, testf=args.testfile, isKitti=args.kitti)
+        attrDet = AutoAttributeDetector(trainf=args.trainfile, testf=args.testfile, isKitti=args.kitti, baseDir=namingParams.get('baseDir', None))
     else:
-        attrDet = AutoAttributeDetector(evalf=args.evalfile)
+        attrDet = AutoAttributeDetector(evalf=args.evalfile, baseDir=namingParams.get('baseDir', None))
 
     # data preprocessing (image padding) and feature/attribute extraction
     dfPrefix = ''
@@ -312,7 +327,7 @@ if __name__ == '__main__':
             break
     if dfPrefix == '':
         raise ValueError('Make sure input dataSetInfo is valid')
-    attrDet.data_preprocessing(outPrefix=dfPrefix)
+    attrDet.data_preprocessing(outPrefix=dfPrefix, save_img=True)
     attrDet.get_data_output(inputParams=inputParams, objLabelHead='label', outPrefix=namingParams.get('outPrefix', ''))
 
     # loopping for attribute detection

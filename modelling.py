@@ -92,13 +92,14 @@ class ModellingBase (object):
 
 # MobileNet Classifier
 class MobileNetClassifier (ModellingBase, Evaluation):
-    def __init__(self, data, outHeader, objLabelHead, input_tensor):
+    def __init__(self, data, outHeader, objLabelHead, input_tensor, baseDir):
         self.data = data
         self.outHeader = outHeader
         self.objLabelHead = objLabelHead
         self.input_tensor = input_tensor
         self.init_lrate = 1e-4
         self.model = None
+        self.baseDir = baseDir
 
         ModellingBase.__init__(self)
         
@@ -182,7 +183,7 @@ class MobileNetClassifier (ModellingBase, Evaluation):
         print ('TestScore: {:.2f}, Accuracy: {:.2f}'.format(score, acc))
         pred = self.model.predict(testData)
 
-        Evaluation.__init__(self, modelf, self.outHeader)
+        Evaluation.__init__(self, modelf, self.outHeader, self.baseDir)
         self.classification_result(data, testOutput, pred, eClass, modelf, labelling)
 
         #self.cls_res_output(testOutput, pred)
@@ -190,12 +191,13 @@ class MobileNetClassifier (ModellingBase, Evaluation):
     
 # MobileNet regressor
 class MobileNetRegressor (ModellingBase, Evaluation):
-    def __init__(self, data, outHeader, input_tensor):
+    def __init__(self, data, outHeader, input_tensor, baseDir):
         self.data = data
         self.outHeader = outHeader
         self.input_tensor = input_tensor
         self.init_lrate = 1e-4
         self.model = None
+        self.baseDir = baseDir
 
         ModellingBase.__init__(self)
     
@@ -276,5 +278,5 @@ class MobileNetRegressor (ModellingBase, Evaluation):
             self.model = load_model(modelf)
         
         pred = self.model.predict(testData)
-        Evaluation.__init__(self, modelf, self.outHeader)
+        Evaluation.__init__(self, modelf, self.outHeader, self.baseDir)
         self.regression_result(testOutput, pred, eClass, modelf)
