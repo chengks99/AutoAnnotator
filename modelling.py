@@ -169,7 +169,7 @@ class MobileNetClassifier (ModellingBase, Evaluation):
         print ('TestScore: {:.2f}, Accuracy: {:.2f}'.format(score, acc))
         pred = self.model.predict(testData)
 
-        Evaluation.__init__(self, modelf)
+        Evaluation.__init__(self, modelf, self.outHeader)
         self.classification_result(data, testOutput, pred, eClass, modelf, labelling)
 
         #self.cls_res_output(testOutput, pred)
@@ -250,5 +250,5 @@ class MobileNetRegressor (ModellingBase, Evaluation):
             self.model = load_model(modelf)
         
         pred = self.model.predict(testData)
-        Evaluation.__init__(self, modelf)
+        Evaluation.__init__(self, modelf, self.outHeader)
         self.regression_result(testOutput, pred, eClass, modelf)

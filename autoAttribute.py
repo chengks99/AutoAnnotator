@@ -200,7 +200,7 @@ if __name__ == '__main__':
     namingParams = {
         'labelMe': '',  # use timestamp as prefix if empty string
         'trainTest': '', # same as labelMe if '' else using this for train/test data output prefix
-        'outPrefix': 'type-occ-view'   # combination of unique sorted attribute list if '' else use this for attribute retrieval file
+        'outPrefix': 'type-alpha-truncated'   # combination of unique sorted attribute list if '' else use this for attribute retrieval file
     }
 
     # input parameters
@@ -215,15 +215,6 @@ if __name__ == '__main__':
                     'attribute': 'occluded',
                     'augmentation': True,
                     'data_filter': {'label': ['Car', 'Pedestrian', 'Van']}
-                },
-                {
-                    'attribute': 'rotation_y',
-                    'ignore': True
-                },
-                {
-                    'attribute': 'label',
-                    'augmentation': True,
-                    'ignore': True
                 },
                 {
                     'attribute': 'alpha',
@@ -297,8 +288,7 @@ if __name__ == '__main__':
     if not args.labelMe is None:
         from utils import LabelMeExtractor
         lm = LabelMeExtractor(args.labelMe, isKitti=args.kitti)
-        df = lm.extraction()
-        args.datafile = lm.save_file(df, outPrefix=namingParams.get('labelMe', ''))
+        args.datafile = lm.extraction(outPrefix=namingParams.get('labelMe', ''))
 
     # split data
     if not args.datafile is None:

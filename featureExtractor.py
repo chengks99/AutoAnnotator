@@ -190,6 +190,7 @@ class FeatureExtractor(object):
             dic['data'] = np.array(img, dtype='float32')
             dic[objLabelHead] = row[objLabelHead]
             dic['indexID'] = row.get(indexHead, str(uuid.uuid4()))
+            dic['objImagePath'] = row['objImagePath']
 
             for il in inputParams.get('config', []):
                 attr = il.get('attribute', None)
@@ -207,7 +208,7 @@ class FeatureExtractor(object):
     
     # drop None data return df with desired data & output
     def _get_data_dic (self, df, outHeader, second_class, objLabelHead, indexHead):
-        _fList = ['data', outHeader, objLabelHead, indexHead]
+        _fList = ['data', 'objImagePath', outHeader, objLabelHead, indexHead]
         if not second_class is None:
             if second_class != outHeader:
                 _fList.append(second_class)

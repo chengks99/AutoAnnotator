@@ -4,13 +4,16 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import os
+import tensorflow as tf
+from PIL import Image
 
 from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
 
 class Evaluation(object):
-    def __init__(self, modelf):
+    def __init__(self, modelf, outHeader):
         print ('Inherit Evaluation Module')
         self.outPrefix = modelf.replace('.h5', '')
+        self.outHeader = outHeader
     
     # TPR and TNR rate calculation
     def _tpr_tnr (self, matrix):
@@ -113,9 +116,23 @@ class Evaluation(object):
 
     # evaluator for classification result
     def classification_result (self, data, act, pred, eClass, modelf, labelling):
+        import pickle
+        jsonDic = {}
+        jsonDic['data'] = data
+        jsonDic['act'] = act
+        jsonDic['pred'] = pred
+        jsonDic['modelf'] = modelf
+        jsonDic['eClass'] = eClass
+        jsonDic['labelling'] = labelling
+
+        with open('eval.pickle', 'wb') as handle:
+            pickle.dump(jsonDic, handle)
+        
         self.labelling = labelling
         self._basic_cf(act, pred)
         self._out_by_class(data, act, pred, eClass)
+
+        self.xrai(data, modelf, labelling)
 
     # evaluator for regression result
     def regression_result (self, act, pred, eClass, modelf):
@@ -129,3 +146,107 @@ class Evaluation(object):
         std = np.std(resList)
 
         print ('Regression Result: Mean: {:.2f}%, Std: {:.2f}%'.format(mean, std))
+            
+    # preparation for XRAI saliency
+    def xrai (self, data, modelf, labelling):
+        from tensorflow.keras.models import Model, load_model
+        from tensorflow.keras.applications import MobileNetV2
+        from tensorflow.keras.layers import Input
+
+        # classification model
+        cModel = load_model(modelf)
+
+        # model for saliency (currently only working with MobileNet)
+        input_tensor = Input(shape=(224,224,3))
+        m = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224,224,3), input_tensor=input_tensor)
+        conv_layer = m.get_layer('block_16_project')
+        model = tf.keras.models.Model([m.inputs], [conv_layer.output, m.output])
+
+        outDir = os.path.join(os.getcwd(), 'saliency-{}'.format(self.outHeader))
+        if not os.path.isfile(outDir):
+            os.makedirs(outDir)
+
+        for index, row in data.iterrows():
+            _input = np.array([row['data']])
+            prediction = cModel.predict(_input)
+
+            _actIndex = np.argmax(row[self.outHeader])
+            _predIndex = np.argmax(prediction)
+            
+            _act = labelling[_actIndex]
+            _pred = labelling[_predIndex]
+            _actProb = prediction[0][_actIndex]
+            _predProb = prediction[0][_predIndex]
+
+            _res = 'W'
+            if _act == _pred:
+                _res = 'C'
+            imgf = '{}-{}({:.2f})-{}({:.2f})_{}'.format(_res, _act, _actProb, _pred, _predProb, os.path.basename(row['objImagePath']))
+
+            print ('***************************')
+            print ('IndexID: {}'.format(row['indexID']))
+            print ('ImgPath: {}'.format(row['objImagePath']))
+            print ('Labelling: {} ({})'.format(row[self.outHeader], _act))
+            print ('Outf: {}'.format(imgf))
+
+            outf = os.path.join(outDir, '{}'.format(imgf))
+            self.xrai_img(row['data'], model, _predIndex, outf)
+
+    def xrai_img (self, imgData, model, pred, outf):
+        import saliency.core as saliency
+        from matplotlib import pylab as P
+
+        class_idx_str = 'class_idx_str'
+        def call_model_function(images, call_model_args=None, expected_keys=None):
+            target_class_idx =  call_model_args[class_idx_str]
+            images = tf.convert_to_tensor(images)
+            with tf.GradientTape() as tape:
+                if expected_keys==[saliency.base.INPUT_OUTPUT_GRADIENTS]:
+                    tape.watch(images)
+                    _, output_layer = model(images)
+                    output_layer = output_layer[:,target_class_idx]
+                    gradients = np.array(tape.gradient(output_layer, images))
+                    return {saliency.base.INPUT_OUTPUT_GRADIENTS: gradients}
+                else:
+                    conv_layer, output_layer = model(images)
+                    gradients = np.array(tape.gradient(output_layer, conv_layer))
+                    return {saliency.base.CONVOLUTION_LAYER_VALUES: conv_layer,
+                            saliency.base.CONVOLUTION_OUTPUT_GRADIENTS: gradients}
+        
+        def ShowImage(im, title='', ax=None):
+            if ax is None:
+                P.figure()
+            P.axis('off')
+            P.imshow(im)
+            P.title(title)
+
+        def ShowHeatMap(im, title, ax=None):
+            if ax is None:
+                P.figure()
+            P.axis('off')
+            P.imshow(im, cmap='inferno')
+            P.title(title)
+
+        call_model_args = {class_idx_str: pred}
+        xrai_obj = saliency.XRAI()
+        xrai_attr = xrai_obj.GetMask(imgData, call_model_function, call_model_args, batch_size=20)
+        
+        ROWS = 1
+        COLS = 3
+        UPSCALE_FACTOR = 5
+        #P.figure(figsize=(ROWS * UPSCALE_FACTOR, COLS * UPSCALE_FACTOR))
+        P.figure()
+
+        # Show original image
+        inImg = Image.fromarray((imgData * 255).astype(np.uint8))
+        ShowImage(inImg, title='Original_Image', ax=P.subplot(ROWS, COLS, 1))
+
+        # Show XRAI heatmap attributions
+        ShowHeatMap(xrai_attr, title='XRAI_Heatmap', ax=P.subplot(ROWS, COLS, 2))
+
+        # Show most salient 30% of the image
+        mask = xrai_attr > np.percentile(xrai_attr, 70)
+        im_mask = np.array(imgData)
+        im_mask[~mask] = 0
+        ShowImage(im_mask, title='Top_30%', ax=P.subplot(ROWS, COLS, 3))
+        P.savefig(outf)
