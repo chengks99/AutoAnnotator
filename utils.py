@@ -23,7 +23,7 @@ class LabelMeExtractor (object):
         if 'flags' in data:
             fDict = data.pop('flags')
             data.update(fDict)
-        data['imagePath'] = os.path.join(os.path.dirname(jsonf), data['imagePath'])
+        data['imagePath'] = os.path.join(os.path.dirname(jsonf), os.path.basename(data['imagePath']))
         objList = []
         for obj in objShape:
             oDict = copy.deepcopy(data)

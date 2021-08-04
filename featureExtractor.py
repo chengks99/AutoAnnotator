@@ -3,12 +3,12 @@ import pandas as pd
 from PIL import Image
 import numpy as np
 
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.preprocessing.image import load_img
-
 from tensorflow.keras.utils import to_categorical
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 
 class FeatureExtractor(object):
     def __init__(self):
