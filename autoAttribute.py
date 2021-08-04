@@ -207,8 +207,8 @@ if __name__ == '__main__':
   
     # defined naming of label. 
     namingParams = {
-        'baseDir': 'ld3-8',
-        'labelMe': 'DS3-8',  # use timestamp as prefix if empty string
+        'baseDir': 'kitti',
+        'labelMe': 'kitti',  # use timestamp as prefix if empty string
         'trainTest': '', # same as labelMe if '' else using this for train/test data output prefix
         'outPrefix': 'type-alpha-truncated'   # combination of unique sorted attribute list if '' else use this for attribute retrieval file
     }
@@ -327,7 +327,7 @@ if __name__ == '__main__':
             break
     if dfPrefix == '':
         raise ValueError('Make sure input dataSetInfo is valid')
-    attrDet.data_preprocessing(outPrefix=dfPrefix, save_img=True)
+    attrDet.data_preprocessing(outPrefix=dfPrefix)
     attrDet.get_data_output(inputParams=inputParams, objLabelHead='label', outPrefix=namingParams.get('outPrefix', ''))
 
     # loopping for attribute detection
