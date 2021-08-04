@@ -327,7 +327,7 @@ if __name__ == '__main__':
             break
     if dfPrefix == '':
         raise ValueError('Make sure input dataSetInfo is valid')
-    attrDet.data_preprocessing(outPrefix=dfPrefix, save_img=True)
+    attrDet.data_preprocessing(outPrefix=dfPrefix)
     attrDet.get_data_output(inputParams=inputParams, objLabelHead='label', outPrefix=namingParams.get('outPrefix', ''))
 
     # loopping for attribute detection
