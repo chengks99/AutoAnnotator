@@ -207,8 +207,8 @@ if __name__ == '__main__':
   
     # defined naming of label. 
     namingParams = {
-        'baseDir': 'ld3-8',
-        'labelMe': 'DS3-8',  # use timestamp as prefix if empty string
+        'baseDir': 'kitti',
+        'labelMe': 'kitti',  # use timestamp as prefix if empty string
         'trainTest': '', # same as labelMe if '' else using this for train/test data output prefix
         'outPrefix': 'type-alpha-truncated'   # combination of unique sorted attribute list if '' else use this for attribute retrieval file
     }
