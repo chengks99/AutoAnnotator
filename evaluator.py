@@ -185,7 +185,7 @@ class Evaluation(object):
             _res = 'W'
             if _act == _pred:
                 _res = 'C'
-            imgf = '{}-{}({:.2f})-{}({:.2f})_{}'.format(_res, _act, _actProb, _pred, _predProb, os.path.basename(row['objImagePath']))
+            imgf = '{}_{}-{:.2f}-{}-{:.2f}_{}'.format(_res, _act, _actProb, _pred, _predProb, os.path.basename(row['objImagePath']))
 
             print ('********** {}/{} **********'.format(index, dfLen))
             print ('IndexID: {}'.format(row['indexID']))
